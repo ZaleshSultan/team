@@ -1,6 +1,20 @@
 import { z } from 'zod';
+import { isIP } from 'node:net';
 
-const booleanEnv = z.enum(['true', 'false']).default('false').transform((v) => v === 'true');
+const trustedProxyEnv = z.string().default('false').transform((value, ctx): false | string[] => {
+  if (value === 'false') return false;
+  const addresses = value.split(',').map((item) => item.trim());
+  const invalid = addresses.some((item) => {
+    const [ip = '', prefix, extra] = item.split('/');
+    const family = isIP(ip);
+    return !family || extra !== undefined || (prefix !== undefined && (!/^\d+$/.test(prefix) || Number(prefix) > (family === 4 ? 32 : 128)));
+  });
+  if (invalid || addresses.length === 0) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Use false or a comma-separated list of trusted proxy IPs/CIDRs' });
+    return z.NEVER;
+  }
+  return addresses;
+});
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
@@ -18,7 +32,7 @@ const envSchema = z.object({
   STEAM_LINK_TTL_SECONDS: z.coerce.number().int().min(60).max(1800).default(600),
   AGE_MINIMUM: z.coerce.number().int().min(13).max(99).default(18),
   RULES_VERSION: z.string().min(1).max(40).default('2026-10-07'),
-  TRUST_PROXY: booleanEnv,
+  TRUST_PROXY: trustedProxyEnv,
   REQUESTS_PER_DAY: z.coerce.number().int().min(1).max(100).default(10),
   STATS_REFRESH_HOURS: z.coerce.number().int().min(1).max(24).default(6),
   STEAM_WEB_API_KEY: z.string().optional(),

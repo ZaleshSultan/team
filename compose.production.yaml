@@ -1,0 +1,16 @@
+# HTTPS reverse proxy runs on the host and forwards to localhost:8088.
+# This fixed network allows the API to trust only the Mini App nginx proxy.
+services:
+  api:
+    environment:
+      TRUST_PROXY: 172.30.75.10
+  miniapp:
+    networks:
+      default:
+        ipv4_address: 172.30.75.10
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.30.75.0/24
+          gateway: 172.30.75.1

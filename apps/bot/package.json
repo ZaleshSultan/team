@@ -10,6 +10,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@squad/shared": "workspace:*",
     "dotenv": "^16.6.1",
     "grammy": "^1.38.2",
     "zod": "^3.25.76"

@@ -24,7 +24,7 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outlin
 .language-toggle { display: flex; padding: 4px; background: #1e2520; border: 1px solid #ffffff0c; border-radius: 9px; gap: 3px; }
 .language-toggle button { border: 0; padding: 6px 10px; border-radius: 5px; font-size: 11px; font-weight: 800; background: transparent; color: var(--muted); }
 .language-toggle button[aria-pressed='true'] { color: #17201b; background: var(--accent); }
-.hero { padding: 62px 0 50px; position: relative; isolation: isolate; }
+.hero { padding: 62px 0 50px; position: relative; isolation: isolate; overflow: clip; }
 .game-tag { display: inline-flex; align-items: center; gap: 8px; border-radius: 5px; padding: 7px 10px; background: #c5f4670d; border: 1px solid #c5f46725; color: var(--accent); font-size: 10px; font-weight: 800; letter-spacing: 1.2px; }
 .live-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
 .eyebrow { margin: 29px 0 15px; color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: 2px; }
@@ -60,6 +60,43 @@ h1 span { color: var(--accent); }
 .milestone-status { white-space: nowrap; font-size: 8px; color: #7d887c; background: #202721; border-radius: 4px; padding: 5px 7px; }
 .active .milestone-status { color: var(--accent); background: #c5f4670b; }
 footer { display: flex; justify-content: space-between; border-top: 1px solid #ffffff0e; padding: 21px 0 27px; gap: 15px; color: #647061; font-size: 9px; line-height: 1.7; }
+.hero { padding-bottom: 29px; }
+.account-layout { display: grid; grid-template-columns: 1.15fr 1fr; gap: 22px; margin-bottom: 22px; align-items: start; }
+.account-panel { padding: 27px; border: 1px solid #ffffff13; border-radius: 15px; background: #19201b; }
+.account-panel h2 { font-size: 23px; letter-spacing: -.8px; margin: 20px 0 10px; }
+.account-panel h3 { font-size: 13px; margin: 0 0 10px; }
+.panel-description { font-size: 12px; line-height: 1.8; color: var(--muted); margin: 0 0 22px; }
+.section-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.step-label { font-size: 9px; letter-spacing: 1.4px; font-weight: 800; color: var(--muted); }
+.badge { background: #c5f4670e; color: var(--accent); font-size: 8px; font-weight: 700; padding: 6px 8px; border: 1px solid #c5f46722; border-radius: 5px; }
+.badge-muted { background: #ffffff05; border-color: #ffffff14; color: #a8b0a7; }
+.identity-row { padding: 14px 0; display: flex; justify-content: space-between; gap: 10px; border-top: 1px solid #ffffff0b; border-bottom: 1px solid #ffffff0b; font-size: 11px; margin-bottom: 22px; }
+.identity-row > span { color: var(--muted); }.identity-row strong { overflow-wrap: anywhere; }
+.rules-block { margin: 23px 0; }.rules-block ul { padding-left: 17px; margin: 0; color: var(--muted); font-size: 11px; line-height: 1.8; }.rules-block li + li { margin-top: 6px; }
+.checkbox-row { display: flex; align-items: flex-start; gap: 10px; font-size: 11px; line-height: 1.6; margin: 15px 0; cursor: pointer; }
+.checkbox-row input { accent-color: var(--accent); flex-shrink: 0; width: 16px; height: 16px; margin: 1px 0 0; }
+.checkbox-row input:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }.checkbox-row small { display: block; color: var(--muted); font-size: 10px; line-height: 1.8; margin-top: 4px; }
+.activity-choice { border-top: 1px solid #ffffff0c; padding-top: 18px; margin-top: 22px; }
+.privacy-note { color: #939d93; font-size: 10px; line-height: 1.8; margin: 18px 0; }
+.primary-button, .secondary-button { display: inline-flex; align-items: center; justify-content: center; min-height: 43px; border-radius: 8px; text-decoration: none; padding: 12px 17px; line-height: 1.5; font-size: 11px; font-weight: 800; text-align: center; }
+.primary-button { color: #17201b; background: var(--accent); border: 1px solid var(--accent); }.primary-button:hover { background: #d5ff89; }.primary-button:disabled { cursor: not-allowed; opacity: .35; }
+.secondary-button { color: #e0e9dd; background: #ffffff04; border: 1px solid #ffffff20; }.secondary-button:hover { background: #ffffff0a; }.secondary-button:disabled { cursor: wait; opacity: .45; }
+.full-width { width: 100%; }.text-button { display: inline-block; font-size: 10px; color: var(--muted); border: 0; background: transparent; padding: 9px 0; text-decoration: underline; text-underline-offset: 3px; }.text-button:disabled { opacity: .4; }
+.username-note { padding: 15px; border: 1px solid #eeb97128; background: #eeb97107; border-radius: 9px; }.username-note h3 { color: #e8c99d; }.username-note p { color: #b6b4a4; font-size: 11px; line-height: 1.7; }.username-note .settings-path { color: #e0d5bd; font-size: 10px; }
+.steam-explainer { display: flex; gap: 13px; padding: 18px 0; margin-bottom: 14px; border-top: 1px solid #ffffff0b; border-bottom: 1px solid #ffffff0b; }
+.steam-explainer svg { color: var(--accent); flex-shrink: 0; width: 26px; height: 26px; margin-top: 3px; }.steam-explainer p { font-size: 11px; line-height: 1.8; color: var(--muted); margin: 0; }
+.link-progress { margin: 20px 0; }.link-progress h3 { color: var(--accent); line-height: 1.6; }.link-progress p { font-size: 11px; line-height: 1.8; color: var(--muted); }
+.fallback-link { font-size: 10px; color: #bbc3b8; display: block; margin: 13px 0 5px; line-height: 1.6; text-underline-offset: 3px; }
+.link-terminal { color: #edc7a3; font-size: 11px; line-height: 1.8; padding: 14px; border: 1px solid #edc7a325; background: #edc7a306; border-radius: 8px; margin: 18px 0; }
+.steam-linked { text-align: center; padding: 12px 0; }.verified-icon { color: var(--accent); height: 57px; width: 57px; margin: 0 auto 19px; display: grid; place-items: center; border-radius: 50%; border: 1px solid #c5f46750; background: #c5f4670b; font-size: 24px; }
+.steam-linked h3 { font-size: 18px; letter-spacing: -.5px; }.steam-linked p { color: var(--muted); font-size: 11px; line-height: 1.8; }
+.steam-id { display: flex; flex-direction: column; gap: 9px; margin: 25px 0; }.steam-id span { font-size: 9px; color: var(--muted); }.steam-id code { font-size: 12px; color: #d9e4d4; overflow-wrap: anywhere; }
+.identity-complete > p { font-size: 11px; line-height: 1.8; }.checkmark { color: var(--accent); margin-right: 10px; }.identity-complete > .privacy-note { border-top: 1px solid #ffffff0b; padding-top: 18px; font-size: 10px; }
+.state-panel { text-align: center; max-width: 660px; margin: 0 auto 45px; padding: 36px; }.state-panel h2 { margin: 16px 0 11px; font-size: 21px; }.state-panel p { color: var(--muted); font-size: 12px; line-height: 1.9; max-width: 440px; margin: 0 auto 22px; }.state-icon { display: block; color: var(--accent); }.state-icon svg { width: 32px; height: 32px; margin: 0 auto; }
+.spinner { display: block; width: 24px; height: 24px; border: 2px solid #c5f46720; border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto; }@keyframes spin { to { transform: rotate(360deg); } }
+.error-notice { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 15px 18px; border-radius: 9px; border: 1px solid #e3b19235; color: #e8c0a7; background: #e3b19208; font-size: 11px; line-height: 1.8; }.error-notice button { color: inherit; font-size: 20px; background: transparent; border: 0; }
+.coming-soon { color: #798575; font-size: 11px; text-align: center; line-height: 1.8; padding: 5px 0 26px; margin: 0; }
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
 @media (max-width: 800px) { .hero-art { right: -14px; width: 260px; height: 260px; opacity: .35; top: 100px; }.art-crosshair { left: 68px; top: 68px; width: 125px; height: 125px; }.roadmap { gap: 28px; } }
 @media (max-width: 600px) {
   .app-shell { padding: 0 22px; }.topbar { height: 77px; }.brand { font-size: 22px; }
@@ -71,4 +108,6 @@ footer { display: flex; justify-content: space-between; border-top: 1px solid #f
   .roadmap { grid-template-columns: 1fr; gap: 11px; padding: 27px 0; }.roadmap-heading h2 { font-size: 21px; }.roadmap-heading > p:last-child { max-width: none; font-size: 11px; }
   .milestone-copy h3 { font-size: 11px; }.milestone-copy p { font-size: 9px; }.milestone-status { font-size: 7px; }
   footer { flex-direction: column; gap: 5px; font-size: 8px; }
+  .account-layout { grid-template-columns: 1fr; gap: 16px; }.account-panel { padding: 22px; }.account-panel h2 { font-size: 21px; }.state-panel { padding: 27px 21px; }.state-panel p { font-size: 11px; }
+  .steam-panel { margin-top: 0; }.identity-row { font-size: 11px; }.checkbox-row, .rules-block ul { font-size: 11px; }.badge { font-size: 8px; }.primary-button, .secondary-button { min-height: 44px; }
 }

@@ -11,6 +11,11 @@ const bot = new Bot(config.BOT_TOKEN);
 
 bot.command('start', async (context) => {
   const messages = context.from?.language_code?.startsWith('en') ? en : ru;
+  if (context.chat.type !== 'private') return;
+  await context.api.setChatMenuButton({
+    chat_id: context.chat.id,
+    menu_button: { type: 'web_app', text: messages.open, web_app: { url: config.MINIAPP_URL } },
+  });
   await context.reply(messages.start, {
     reply_markup: new InlineKeyboard().webApp(messages.open, config.MINIAPP_URL),
   });

@@ -1,5 +1,40 @@
 name: squad
 services:
+  api:
+    profiles: ['app']
+    build:
+      context: .
+      target: api
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-squad}:${POSTGRES_PASSWORD:-squad_local_only}@postgres:5432/${POSTGRES_DB:-squad}?schema=public
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    restart: unless-stopped
+  bot:
+    profiles: ['app']
+    build:
+      context: .
+      target: bot
+    env_file: .env
+    environment:
+      NODE_ENV: production
+    depends_on:
+      api: { condition: service_started }
+    restart: unless-stopped
+  miniapp:
+    profiles: ['app']
+    build:
+      context: .
+      target: miniapp
+    ports:
+      - '127.0.0.1:${APP_PORT:-8088}:80'
+    depends_on:
+      api: { condition: service_started }
+    restart: unless-stopped
   postgres:
     image: postgres:16-alpine
     environment:

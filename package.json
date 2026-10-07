@@ -11,6 +11,7 @@
     "build": "pnpm --filter @squad/shared build && pnpm -r --filter @squad/api --filter @squad/bot --filter @squad/miniapp build",
     "typecheck": "pnpm --filter @squad/shared build && pnpm -r typecheck",
     "test": "pnpm --filter @squad/shared build && pnpm -r --if-present test",
+    "test:integration": "pnpm --filter @squad/shared build && pnpm --filter @squad/api test:integration",
     "db:generate": "pnpm --filter @squad/api db:generate",
     "db:migrate": "dotenv -e .env -- pnpm --filter @squad/api db:migrate",
     "db:dev": "dotenv -e .env -- pnpm --filter @squad/api db:dev",

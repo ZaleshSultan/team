@@ -1,4 +1,5 @@
 import { z } from 'zod';
+export * from './auth.js';
 
 export const languageSchema = z.enum(['ru', 'en']);
 export type Language = z.infer<typeof languageSchema>;

@@ -1,0 +1,12 @@
+{
+  "steam": {
+    "success": { "title": "Steam connected", "description": "Return to the Mini App: it will detect your verification automatically. You can close this tab." },
+    "invalid": { "title": "Could not verify sign-in", "description": "Return to the Mini App and create a new Steam linking URL." },
+    "expired": { "title": "This link has expired", "description": "Links are single-use and short-lived. Create a new link in the Mini App." },
+    "cancelled": { "title": "Sign-in cancelled", "description": "You can connect Steam again from the Mini App." },
+    "unavailable": { "title": "Steam is temporarily unavailable", "description": "Return to the Mini App and try connecting Steam later." },
+    "conflict": { "title": "Account already connected", "description": "This Steam account is already linked to a profile. Existing links cannot be replaced automatically." },
+    "return": "Return to Telegram",
+    "privacy": "SQUAD does not receive your Steam password, access codes or session. Steam verifies your account."
+  }
+}
