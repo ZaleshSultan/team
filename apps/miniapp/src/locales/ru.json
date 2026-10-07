@@ -1,0 +1,42 @@
+{
+  "app": {
+    "name": "SQUAD",
+    "title": "SQUAD — найти своих в CS2",
+    "game": "COUNTER-STRIKE 2",
+    "edition": "TELEGRAM MINI APP",
+    "language": "Язык интерфейса",
+    "russian": "RU",
+    "english": "EN",
+    "footer": "Хорошая игра начинается с хорошей команды.",
+    "development": "Ранняя версия · этап M1"
+  },
+  "home": {
+    "eyebrow": "СЛЕДУЮЩАЯ КАТКА — ВМЕСТЕ",
+    "headline": "Найди своих.",
+    "headlineAccent": "Играй в команде.",
+    "description": "Тиммейты с твоими целями, языком и игровым ритмом. Проверенные аккаунты. Заявки без лишнего шума.",
+    "telegramNotice": "Открой SQUAD через кнопку в Telegram-боте.",
+    "telegramDetected": "Mini App открыт в Telegram",
+    "authPending": "Вход и подключение Steam появятся на этапе M2.",
+    "featureIdentity": "Подтверждённый Steam",
+    "featureIdentityDetail": "Твой профиль, твоя игровая история.",
+    "featureMatch": "Общий язык",
+    "featureMatchDetail": "Подбор по региону, роли и расписанию.",
+    "featureConnection": "Сначала — согласие",
+    "featureConnectionDetail": "Контакты доступны после принятия заявки."
+  },
+  "roadmap": {
+    "label": "СТАТУС ПЛАТФОРМЫ",
+    "title": "Собираем основу",
+    "description": "Этот экран показывает готовность проекта. Поиск игроков пока недоступен.",
+    "foundation": "Основа платформы",
+    "foundationDetail": "Mini App, бот и структура данных",
+    "foundationStatus": "Текущий этап",
+    "identity": "Вход и Steam",
+    "identityDetail": "Авторизация Telegram и подтверждение аккаунта",
+    "identityStatus": "Далее",
+    "discovery": "Профили и поиск",
+    "discoveryDetail": "Статистика, фильтры и заявки в команду",
+    "discoveryStatus": "Запланировано"
+  }
+}

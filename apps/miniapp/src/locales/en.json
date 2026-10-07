@@ -1,0 +1,42 @@
+{
+  "app": {
+    "name": "SQUAD",
+    "title": "SQUAD — find your CS2 teammates",
+    "game": "COUNTER-STRIKE 2",
+    "edition": "TELEGRAM MINI APP",
+    "language": "Interface language",
+    "russian": "RU",
+    "english": "EN",
+    "footer": "A good game starts with a good team.",
+    "development": "Early version · milestone M1"
+  },
+  "home": {
+    "eyebrow": "YOUR NEXT MATCH, TOGETHER",
+    "headline": "Find your people.",
+    "headlineAccent": "Play as a team.",
+    "description": "Teammates who share your goals, language and playing rhythm. Verified accounts. Requests without the noise.",
+    "telegramNotice": "Open SQUAD using the button in the Telegram bot.",
+    "telegramDetected": "Mini App opened in Telegram",
+    "authPending": "Sign-in and Steam linking arrive in milestone M2.",
+    "featureIdentity": "Verified Steam",
+    "featureIdentityDetail": "Your profile, your gaming history.",
+    "featureMatch": "Common ground",
+    "featureMatchDetail": "Find players by region, role and schedule.",
+    "featureConnection": "Consent comes first",
+    "featureConnectionDetail": "Contact details appear after a request is accepted."
+  },
+  "roadmap": {
+    "label": "PLATFORM STATUS",
+    "title": "Building the foundation",
+    "description": "This screen shows project readiness. Player search is not available yet.",
+    "foundation": "Platform foundation",
+    "foundationDetail": "Mini App, bot and data structure",
+    "foundationStatus": "Current milestone",
+    "identity": "Sign-in and Steam",
+    "identityDetail": "Telegram authentication and account verification",
+    "identityStatus": "Up next",
+    "discovery": "Profiles and discovery",
+    "discoveryDetail": "Stats, filters and teammate requests",
+    "discoveryStatus": "Planned"
+  }
+}

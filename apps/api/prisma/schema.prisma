@@ -1,0 +1,311 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SteamLinkStatus {
+  PENDING
+  STARTED
+  VERIFYING
+  COMPLETED
+  FAILED
+}
+
+enum TeammateRequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELLED
+  EXPIRED
+}
+
+enum ReportStatus {
+  OPEN
+  REVIEWED
+  DISMISSED
+}
+
+model User {
+  id                  String    @id @default(uuid()) @db.Uuid
+  telegramId          BigInt    @unique @map("telegram_id")
+  username            String?   @db.VarChar(32)
+  language            String    @default("ru") @db.VarChar(10)
+  ageConfirmedAt      DateTime? @map("age_confirmed_at") @db.Timestamptz(3)
+  ageMinimumConfirmed Int?      @map("age_minimum_confirmed")
+  rulesAcceptedAt     DateTime? @map("rules_accepted_at") @db.Timestamptz(3)
+  rulesVersion        String?   @map("rules_version") @db.VarChar(50)
+  isBanned            Boolean   @default(false) @map("is_banned")
+  botBlocked          Boolean   @default(false) @map("bot_blocked")
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  privacySettings  PrivacySettings?
+  steamAccount     SteamAccount?
+  faceitAccount    FaceitAccount?
+  playerProfiles   PlayerProfile[]
+  userGames        UserGame[]
+  sessions         Session[]
+  steamLinks       SteamLink[]
+  outgoingRequests TeammateRequest[] @relation("RequestSender")
+  incomingRequests TeammateRequest[] @relation("RequestRecipient")
+  blocksMade       Block[]           @relation("Blocker")
+  blocksReceived   Block[]           @relation("BlockedUser")
+  reportsMade      Report[]          @relation("Reporter")
+  reportsReceived  Report[]          @relation("ReportedUser")
+  reportsReviewed  Report[]          @relation("ReportReviewer")
+
+  @@index([isBanned])
+  @@map("users")
+}
+
+model PrivacySettings {
+  userId             String   @id @map("user_id") @db.Uuid
+  shareSteamActivity Boolean  @default(false) @map("share_steam_activity")
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("privacy_settings")
+}
+
+model Session {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  tokenHash String   @unique @map("token_hash") @db.VarChar(64)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(3)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+// The start code and OpenID callback state are separate random secrets. Only
+// their SHA-256 hashes are persisted; startedAt/status enforce one-use start.
+model SteamLink {
+  id                 String            @id @default(uuid()) @db.Uuid
+  userId             String            @map("user_id") @db.Uuid
+  startCodeHash      String            @unique @map("start_code_hash") @db.VarChar(64)
+  callbackStateHash  String?           @unique @map("callback_state_hash") @db.VarChar(64)
+  browserBindingHash String?           @map("browser_binding_hash") @db.VarChar(64)
+  status             SteamLinkStatus   @default(PENDING)
+  returnTo           String?           @map("return_to")
+  realm              String?
+  createdAt          DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt          DateTime          @map("expires_at") @db.Timestamptz(3)
+  startedAt          DateTime?         @map("started_at") @db.Timestamptz(3)
+  completedAt        DateTime?         @map("completed_at") @db.Timestamptz(3)
+  failureCode        String?           @map("failure_code") @db.VarChar(100)
+  user               User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  acceptedNonce      SteamOpenIdNonce?
+
+  @@index([userId, createdAt])
+  @@index([expiresAt])
+  @@map("steam_links")
+}
+
+// Steam response nonces are public assertions, not account/session secrets.
+// Global uniqueness prevents a response being replayed across linking flows.
+model SteamOpenIdNonce {
+  nonce       String    @id @db.VarChar(255)
+  steamLinkId String    @unique @map("steam_link_id") @db.Uuid
+  acceptedAt  DateTime  @default(now()) @map("accepted_at") @db.Timestamptz(3)
+  expiresAt   DateTime  @map("expires_at") @db.Timestamptz(3)
+  steamLink   SteamLink @relation(fields: [steamLinkId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@map("steam_openid_nonces")
+}
+
+model SteamAccount {
+  id                String         @id @default(uuid()) @db.Uuid
+  userId            String         @unique @map("user_id") @db.Uuid
+  steamId64         BigInt         @unique @map("steam_id64")
+  personaName       String?        @map("persona_name") @db.VarChar(100)
+  profileUrl        String?        @map("profile_url")
+  avatarUrl         String?        @map("avatar_url")
+  profileVisibility Int?           @map("profile_visibility")
+  gameDetailsPublic Boolean?       @map("game_details_public")
+  timeCreated       DateTime?      @map("time_created") @db.Timestamptz(3)
+  vacBans           Int?           @map("vac_bans")
+  gameBans          Int?           @map("game_bans")
+  daysSinceLastBan  Int?           @map("days_since_last_ban")
+  communityBanned   Boolean?       @map("community_banned")
+  economyBan        String?        @map("economy_ban") @db.VarChar(50)
+  linkedAt          DateTime       @default(now()) @map("linked_at") @db.Timestamptz(3)
+  syncedAt          DateTime?      @map("synced_at") @db.Timestamptz(3)
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  faceitAccount     FaceitAccount?
+
+  // This compound key lets FACEIT reference the exact Steam account of its user.
+  @@unique([userId, steamId64])
+  @@index([syncedAt])
+  @@map("steam_accounts")
+}
+
+model FaceitAccount {
+  id           String       @id @default(uuid()) @db.Uuid
+  userId       String       @unique @map("user_id") @db.Uuid
+  playerId     String       @unique @map("player_id") @db.VarChar(100)
+  steamId64    BigInt       @unique @map("steam_id64")
+  nickname     String       @db.VarChar(100)
+  profileUrl   String?      @map("profile_url")
+  level        Int?
+  elo          Int?
+  kd           Float?
+  winRate      Float?       @map("win_rate")
+  favoriteMaps String[]     @default([]) @map("favorite_maps")
+  linkedAt     DateTime     @default(now()) @map("linked_at") @db.Timestamptz(3)
+  syncedAt     DateTime?    @map("synced_at") @db.Timestamptz(3)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  steamAccount SteamAccount @relation(fields: [userId, steamId64], references: [userId, steamId64], onDelete: Cascade)
+
+  @@unique([userId, steamId64])
+  @@index([level, elo])
+  @@index([syncedAt])
+  @@map("faceit_accounts")
+}
+
+model Game {
+  id             String              @id @default(uuid()) @db.Uuid
+  slug           String              @unique @db.VarChar(50)
+  name           String              @db.VarChar(100)
+  steamAppId     Int?                @unique @map("steam_app_id")
+  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  profiles       PlayerProfile[]
+  userGames      UserGame[]
+  clusterMembers GameClusterMember[]
+  requests       TeammateRequest[]
+
+  @@map("games")
+}
+
+// GameProvider owns validation of game-specific roles/lookingFor values.
+model PlayerProfile {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  gameId      String   @map("game_id") @db.Uuid
+  roles       String[] @default([])
+  languages   String[] @default([])
+  hasMic      Boolean  @default(false) @map("has_mic")
+  region      String   @db.VarChar(50)
+  playTimes   String[] @default([]) @map("play_times")
+  lookingFor  String[] @default([]) @map("looking_for")
+  bio         String   @default("") @db.VarChar(500)
+  isPublished Boolean  @default(false) @map("is_published")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game        Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, gameId])
+  @@index([gameId, isPublished, createdAt, id])
+  @@index([gameId, isPublished, region, hasMic, createdAt, id])
+  @@index([roles], type: Gin)
+  @@index([languages], type: Gin)
+  @@index([lookingFor], type: Gin)
+  @@map("player_profiles")
+}
+
+// Steam playtime values are minutes. Rows include every owned game, even when
+// no GameProvider exists; gameId is optional and only maps known catalog games.
+model UserGame {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  steamAppId     Int      @map("steam_app_id")
+  gameId         String?  @map("game_id") @db.Uuid
+  name           String?  @db.VarChar(200)
+  playtimeTotal  Int      @map("playtime_total")
+  playtime2weeks Int?     @map("playtime_2weeks")
+  syncedAt       DateTime @map("synced_at") @db.Timestamptz(3)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game           Game?    @relation(fields: [gameId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, steamAppId])
+  @@index([steamAppId, playtime2weeks])
+  @@index([gameId])
+  @@index([syncedAt])
+  @@map("user_games")
+}
+
+model GameCluster {
+  id        String              @id @default(uuid()) @db.Uuid
+  slug      String              @unique @db.VarChar(50)
+  name      String              @db.VarChar(100)
+  createdAt DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  members   GameClusterMember[]
+
+  @@map("game_clusters")
+}
+
+model GameClusterMember {
+  clusterId String      @map("cluster_id") @db.Uuid
+  gameId    String      @map("game_id") @db.Uuid
+  cluster   GameCluster @relation(fields: [clusterId], references: [id], onDelete: Cascade)
+  game      Game        @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@id([clusterId, gameId])
+  @@index([gameId])
+  @@map("game_cluster_members")
+}
+
+model TeammateRequest {
+  id         String                @id @default(uuid()) @db.Uuid
+  fromUserId String                @map("from_user_id") @db.Uuid
+  toUserId   String                @map("to_user_id") @db.Uuid
+  gameId     String                @map("game_id") @db.Uuid
+  status     TeammateRequestStatus @default(PENDING)
+  message    String?               @db.VarChar(300)
+  createdAt  DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  resolvedAt DateTime?             @map("resolved_at") @db.Timestamptz(3)
+  fromUser   User                  @relation("RequestSender", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser     User                  @relation("RequestRecipient", fields: [toUserId], references: [id], onDelete: Cascade)
+  game       Game                  @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  // Migration also adds a no-self CHECK and a partial unique pending-pair index.
+  @@index([fromUserId, createdAt])
+  @@index([toUserId, status, createdAt])
+  @@index([fromUserId, toUserId, gameId, status])
+  @@index([gameId])
+  @@map("teammate_requests")
+}
+
+model Block {
+  id            String   @id @default(uuid()) @db.Uuid
+  blockerUserId String   @map("blocker_user_id") @db.Uuid
+  blockedUserId String   @map("blocked_user_id") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  blocker       User     @relation("Blocker", fields: [blockerUserId], references: [id], onDelete: Cascade)
+  blockedUser   User     @relation("BlockedUser", fields: [blockedUserId], references: [id], onDelete: Cascade)
+
+  // Migration also adds a no-self CHECK.
+  @@unique([blockerUserId, blockedUserId])
+  @@index([blockedUserId])
+  @@map("blocks")
+}
+
+model Report {
+  id             String       @id @default(uuid()) @db.Uuid
+  reporterUserId String       @map("reporter_user_id") @db.Uuid
+  reportedUserId String       @map("reported_user_id") @db.Uuid
+  reason         String       @db.VarChar(100)
+  comment        String?      @db.VarChar(1000)
+  status         ReportStatus @default(OPEN)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  reviewedAt     DateTime?    @map("reviewed_at") @db.Timestamptz(3)
+  reviewerUserId String?      @map("reviewer_user_id") @db.Uuid
+  reporter       User         @relation("Reporter", fields: [reporterUserId], references: [id], onDelete: Cascade)
+  reportedUser   User         @relation("ReportedUser", fields: [reportedUserId], references: [id], onDelete: Cascade)
+  reviewer       User?        @relation("ReportReviewer", fields: [reviewerUserId], references: [id], onDelete: SetNull)
+
+  // Migration also adds a no-self CHECK.
+  @@index([status, createdAt])
+  @@index([reportedUserId, createdAt])
+  @@index([reporterUserId])
+  @@index([reviewerUserId])
+  @@map("reports")
+}
