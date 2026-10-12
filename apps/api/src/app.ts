@@ -9,12 +9,17 @@ import { ZodError } from 'zod';
 import { AppError } from './errors.js';
 import type { Config } from './config.js';
 import { registerAuthRoutes } from './auth/routes.js';
+import { registerStatsRoutes } from './stats/routes.js';
+import { StatsService } from './stats/service.js';
+import { SteamProvider } from './stats/providers/steam.js';
+import { FaceitProvider } from './stats/providers/faceit.js';
 
 export interface AppDependencies {
   prisma?: PrismaClient;
   redis?: Redis | false;
   fetch?: typeof globalThis.fetch;
   now?: () => Date;
+  stats?: StatsService;
 }
 
 export async function buildApp(config: Config, dependencies: AppDependencies = {}) {
@@ -71,5 +76,10 @@ export async function buildApp(config: Config, dependencies: AppDependencies = {
     }
   });
   await registerAuthRoutes(app, { config, prisma, fetch: dependencies.fetch ?? globalThis.fetch, now: dependencies.now ?? (() => new Date()) });
+  const stats = dependencies.stats ?? new StatsService(prisma, config, {
+    steam: new SteamProvider({ apiKey: config.STEAM_WEB_API_KEY, fetch: dependencies.fetch }),
+    faceit: new FaceitProvider({ apiKey: config.FACEIT_API_KEY, fetch: dependencies.fetch }),
+  }, undefined, dependencies.now);
+  await registerStatsRoutes(app, { config, prisma, stats, now: dependencies.now ?? (() => new Date()) });
   return app;
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { SquadApi } from './api.js';
+import { statsFixture } from './stats-fixture.js';
 
 const now = Date.parse('2026-10-07T12:00:00.000Z');
 const authPayload = {
@@ -171,5 +172,97 @@ describe('Mini App authentication client', () => {
     await expect(client.me()).rejects.toMatchObject({ code: 'USER_BANNED' });
     await expect(client.me()).rejects.toMatchObject({ code: 'SESSION_EXPIRED' });
     expect(send).toHaveBeenCalledTimes(2);
+  });
+
+  it('reads cached stats without triggering a provider refresh', async () => {
+    const send = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(response(authPayload))
+      .mockResolvedValueOnce(response(statsFixture));
+    const client = new SquadApi('', send, () => now);
+    await client.authenticate('signed-telegram-data');
+    await expect(client.stats()).resolves.toEqual(statsFixture);
+    expect(send.mock.calls[1]?.[0]).toBe('/api/me/stats');
+    expect(send.mock.calls[1]?.[1]).toMatchObject({ method: 'GET', headers: { Authorization: `Bearer ${authPayload.token}` } });
+    expect(send).toHaveBeenCalledTimes(2);
+  });
+
+  it('accepts a queued asynchronous refresh with a server cooldown', async () => {
+    const sync = { ...statsFixture.sync, status: 'QUEUED', manualAvailableAt: '2026-10-12T12:05:00.000Z' };
+    const send = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(response(authPayload))
+      .mockResolvedValueOnce(response({ sync }, 202));
+    const client = new SquadApi('', send, () => now);
+    await client.authenticate('signed-telegram-data');
+    await expect(client.refreshStats()).resolves.toEqual({ sync });
+    expect(send.mock.calls[1]?.[0]).toBe('/api/me/sync');
+    expect(send.mock.calls[1]?.[1]).toMatchObject({ method: 'POST', body: '{}' });
+  });
+
+  it('trims FACEIT input and surfaces only a safe Steam mismatch code', async () => {
+    const send = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(response(authPayload))
+      .mockResolvedValueOnce(response({ error: { code: 'FACEIT_STEAM_MISMATCH', message: 'upstream secret details' } }, 409));
+    const client = new SquadApi('', send, () => now);
+    await client.authenticate('signed-telegram-data');
+    await expect(client.linkFaceit('  other-player  ')).rejects.toMatchObject({ code: 'FACEIT_STEAM_MISMATCH', message: 'FACEIT_STEAM_MISMATCH' });
+    expect(send.mock.calls[1]?.[0]).toBe('/api/me/faceit/link');
+    expect(send.mock.calls[1]?.[1]?.body).toBe('{"nickname":"other-player"}');
+  });
+
+  it('does not let a cancelled stats response clear a newly authenticated session', async () => {
+    const renewedAuth = { ...authPayload, token: 'B'.repeat(43) };
+    let finish!: (result: Response) => void;
+    const send = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(response(authPayload))
+      .mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }))
+      .mockResolvedValueOnce(response(renewedAuth))
+      .mockResolvedValueOnce(response({ user: renewedAuth.user }));
+    const client = new SquadApi('', send, () => now);
+    await client.authenticate('signed-telegram-data');
+    const controller = new AbortController();
+    const rejected = expect(client.stats(controller.signal)).rejects.toMatchObject({ name: 'AbortError' });
+    controller.abort();
+    client.forgetSession();
+    await client.authenticate('new-signed-telegram-data');
+    finish(response({ error: { code: 'SESSION_INVALID', message: 'Old session' } }, 401));
+    await rejected;
+    await expect(client.me()).resolves.toEqual({ user: renewedAuth.user });
+    expect(send.mock.calls[3]?.[1]?.headers).toMatchObject({ Authorization: `Bearer ${renewedAuth.token}` });
+  });
+
+  it('also isolates an old uncancelled rejection from a newer bearer session', async () => {
+    const renewedAuth = { ...authPayload, token: 'B'.repeat(43) };
+    let finish!: (result: Response) => void;
+    const send = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(response(authPayload))
+      .mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }))
+      .mockResolvedValueOnce(response(renewedAuth))
+      .mockResolvedValueOnce(response({ user: renewedAuth.user }));
+    const client = new SquadApi('', send, () => now);
+    await client.authenticate('signed-telegram-data');
+    const rejected = expect(client.stats()).rejects.toMatchObject({ code: 'SESSION_INVALID' });
+    client.forgetSession();
+    await client.authenticate('new-signed-telegram-data');
+    finish(response({ error: { code: 'SESSION_INVALID', message: 'Old session' } }, 401));
+    await rejected;
+    await expect(client.me()).resolves.toEqual({ user: renewedAuth.user });
+  });
+
+  it('cancels a FACEIT link request when the card is unmounted', async () => {
+    const send = vi.fn<typeof fetch>().mockResolvedValueOnce(response(authPayload));
+    const client = new SquadApi('', send, () => now);
+    await client.authenticate('signed-telegram-data');
+    let started!: () => void;
+    const ready = new Promise<void>((resolve) => { started = resolve; });
+    send.mockImplementationOnce((_url, options) => new Promise((_resolve, reject) => {
+      options?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true });
+      started();
+    }));
+    const controller = new AbortController();
+    const rejected = expect(client.linkFaceit('TestPlayer', controller.signal)).rejects.toMatchObject({ name: 'AbortError' });
+    await ready;
+    controller.abort();
+    await rejected;
+    expect(send.mock.calls[1]?.[1]?.signal?.aborted).toBe(true);
   });
 });

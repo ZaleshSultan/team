@@ -1,6 +1,6 @@
 # Squad — Telegram CS2 teammates
 
-TypeScript MVP built in reviewable milestones. **M1 and M2 are implemented; stopped for review.** A user can open the bot, authenticate in Telegram, confirm age/rules/contact details, and link Steam in an external browser. Stats, profile editing, search, requests and moderation are M3–M7.
+TypeScript MVP built in reviewable milestones. **M1–M3 are implemented; stopped for review.** Telegram authentication, consent and external Steam linking are followed by cached Steam/FACEIT stats. Profile editing, search, requests and moderation remain M4–M7. See [M3 stats and operations](docs/stats.md) and [API mapping verification limits](docs/api-mappings.md).
 
 ## Requirements
 
@@ -68,13 +68,13 @@ packages/shared Zod schemas and API types shared by clients and server
 docs/          Database and authentication design notes
 ```
 
-Game logic belongs behind `GameProvider`, not inside generic search/request code. All user-facing strings live in translation files. `user_games` is ready for **all owned games** in M3; search remains CS2-only. Clusters are schema-only.
+Game logic belongs behind `GameProvider`, not inside generic search/request code. All user-facing strings live in translation files. `user_games` caches **all accessible owned games**, including titles outside the catalog; search remains a future CS2-only feature. Clusters are schema-only.
 
 ## Keys and privacy
 
-Steam OpenID verifies identity in M2 and needs no Steam API key. `STEAM_WEB_API_KEY` and `FACEIT_API_KEY` are required for stats in M3, sourced from [Steam](https://steamcommunity.com/dev/apikey) and [FACEIT developers](https://developers.faceit.com/). No Steam/FACEIT passwords or session tokens are accepted or stored. Onboarding requires a Telegram username, age confirmation (default 18, configurable), and community rules consent; no birth date is stored. The age threshold is a product setting, not a claim about jurisdiction-specific age eligibility.
+Steam OpenID verifies identity and needs no Steam API key. `STEAM_WEB_API_KEY` and `FACEIT_API_KEY` enable their respective cached stats providers, sourced from [Steam](https://steamcommunity.com/dev/apikey) and [FACEIT developers](https://developers.faceit.com/). Missing keys disable only that provider; the app shows stats unavailable. No Steam/FACEIT passwords or session tokens are accepted or stored. Onboarding requires a Telegram username, age confirmation (default 18, configurable), and community rules consent; no birth date is stored. The age threshold is a product setting, not a claim about jurisdiction-specific age eligibility.
 
-`share_steam_activity` defaults to false. M3–M5 must omit exact activity from public responses when disabled. Session/start-link/state/browser secrets are stored only as hashes; session tokens stay in client memory. Health responses expose no credentials. API logs exclude authorization and one-time URLs. [Authentication and external Steam flow](docs/authentication.md) describes the protocol, endpoints, state transitions, and test boundaries.
+`share_steam_activity` defaults to false. The public serializer omits exact activity and the library when disabled; the owner can always inspect their cache. Session/start-link/state/browser secrets are stored only as hashes; session tokens stay in client memory. Health responses expose no credentials. API logs exclude authorization and URLs, including provider URLs with Steam keys. [Authentication and external Steam flow](docs/authentication.md) describes the protocol, endpoints, state transitions, and test boundaries.
 
 ## Deployment approach
 

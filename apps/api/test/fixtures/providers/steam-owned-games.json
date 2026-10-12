@@ -1,0 +1,10 @@
+{
+  "response": {
+    "game_count": 3,
+    "games": [
+      { "appid": 730, "name": "Counter-Strike 2", "playtime_forever": 124800, "playtime_2weeks": 900 },
+      { "appid": 570, "name": "Dota 2", "playtime_forever": 10500, "playtime_2weeks": 120 },
+      { "appid": 440, "name": "Team Fortress 2", "playtime_forever": 360 }
+    ]
+  }
+}
