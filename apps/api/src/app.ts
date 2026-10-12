@@ -13,6 +13,7 @@ import { registerStatsRoutes } from './stats/routes.js';
 import { StatsService } from './stats/service.js';
 import { SteamProvider } from './stats/providers/steam.js';
 import { FaceitProvider } from './stats/providers/faceit.js';
+import { sessionRateLimitKey } from './auth/session.js';
 
 export interface AppDependencies {
   prisma?: PrismaClient;
@@ -42,6 +43,7 @@ export async function buildApp(config: Config, dependencies: AppDependencies = {
   await app.register(cookie);
   if (redis) redis.on('error', () => app.log.error('Redis connection failed'));
   await app.register(rateLimit, { max: 120, timeWindow: '1 minute', ...(redis ? { redis } : {}), skipOnError: false,
+    keyGenerator: (request) => sessionRateLimitKey(request, { prisma, now: dependencies.now ?? (() => new Date()) }),
     errorResponseBuilder: (_request, context) => new AppError(context.statusCode, 'RATE_LIMITED', 'Too many requests; retry later'),
   });
   app.addHook('onClose', async () => {
@@ -65,7 +67,7 @@ export async function buildApp(config: Config, dependencies: AppDependencies = {
     return reply.code(status).send({ error: { code: status === 500 ? 'INTERNAL_ERROR' : 'INVALID_REQUEST', message: status === 500 ? 'An internal error occurred' : 'Invalid request', requestId: request.id } });
   });
   app.setNotFoundHandler((request, reply) => reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Route not found', requestId: request.id } }));
-  app.get('/health', { config: { rateLimit: false } }, async () => ({ status: 'ok', milestone: 'M2' }));
+  app.get('/health', { config: { rateLimit: false } }, async () => ({ status: 'ok' }));
   app.get('/ready', { config: { rateLimit: false } }, async () => {
     try {
       await prisma.$queryRaw`SELECT 1`;

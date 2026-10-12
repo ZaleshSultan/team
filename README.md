@@ -101,7 +101,7 @@ your.example.com {
 }
 ```
 
-nginx trusts only the host gateway, replaces the forwarding chain with the sanitized client IP, and the API trusts only nginx. `TRUST_PROXY` accepts explicit IPs/CIDRs or `false`; it rejects trust-all booleans. For local tunnels keep it false; requests share the local proxy quota. Do not publish the API separately with trusted proxy headers enabled. Keep TLS and DNS configured, register the final URL in BotFather, and back up persistent volumes. The sample API/bot images retain workspace development tooling for straightforward migrations; prune them in a later deployment hardening milestone.
+nginx trusts only the host gateway, replaces the forwarding chain with the sanitized client IP, and the API trusts only nginx. `TRUST_PROXY` accepts explicit IPs/CIDRs or `false`; it rejects trust-all booleans. For local tunnels keep it false. Authenticated request limits use the validated session user ID; public/anonymous requests use the IP quota. Do not publish the API separately with trusted proxy headers enabled. Keep TLS and DNS configured, register the final URL in BotFather, and back up persistent volumes. The sample API/bot images retain workspace development tooling for straightforward migrations; prune them in a later deployment hardening milestone. [Account deletion and hardening](docs/hardening.md) covers confirmation, cascades and the required database password.
 
 ## M2 real-device review
 

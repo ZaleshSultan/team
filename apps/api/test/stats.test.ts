@@ -209,6 +209,7 @@ describe('cached API and privacy serializer', () => {
     const app = await buildApp(config, { prisma: prisma as any, redis: false, stats: h.service, now: () => now });
     const response = await app.inject({ url: '/api/me/stats', headers: { authorization: `Bearer ${'A'.repeat(43)}` } });
     expect(response.statusCode).toBe(200); expect(response.json().steam.cs2.playtimeTotal).toBe(120);
+    expect(prisma.session.findUnique).toHaveBeenCalledTimes(1);
     expect(h.providers.steam.sync).not.toHaveBeenCalled(); expect(h.queue.enqueue).not.toHaveBeenCalled();
     expect((await app.inject('/api/me/stats')).statusCode).toBe(401); await app.close();
   });
