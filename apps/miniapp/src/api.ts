@@ -4,6 +4,9 @@ import {
   meResponseSchema,
   steamLinkResponseSchema,
   steamLinkStatusResponseSchema,
+  statsResponseSchema,
+  manualSyncResponseSchema,
+  faceitLinkInputSchema,
   type AuthResponse,
 } from '@squad/shared';
 
@@ -74,6 +77,18 @@ export class SquadApi {
     return this.request(`/api/auth/steam/links/${encodeURIComponent(id)}`, steamLinkStatusResponseSchema, undefined, true, signal);
   }
 
+  stats(signal?: AbortSignal) {
+    return this.request('/api/me/stats', statsResponseSchema, undefined, true, signal);
+  }
+
+  refreshStats(signal?: AbortSignal) {
+    return this.request('/api/me/sync', manualSyncResponseSchema, {}, true, signal);
+  }
+
+  linkFaceit(nickname: string, signal?: AbortSignal) {
+    return this.request('/api/me/faceit/link', statsResponseSchema, faceitLinkInputSchema.parse({ nickname }), true, signal);
+  }
+
   async logout() {
     try {
       await this.request('/api/auth/logout', { parse: () => undefined }, {});
@@ -88,6 +103,10 @@ export class SquadApi {
 
   private async request<T>(path: string, schema: ResponseSchema<T>, body?: unknown, authenticated = true, signal?: AbortSignal): Promise<T> {
     const headers: Record<string, string> = { Accept: 'application/json' };
+    const sessionToken = this.session?.token;
+    const forgetRejectedSession = () => {
+      if (this.session?.token === sessionToken) this.forgetSession();
+    };
     if (authenticated) {
       if (!this.session || Date.parse(this.session.expiresAt) <= this.now()) {
         this.forgetSession();
@@ -111,8 +130,9 @@ export class SquadApi {
         cache: 'no-store',
         referrerPolicy: 'no-referrer',
       });
+      if (controller.signal.aborted) throw new DOMException('Aborted', 'AbortError');
       if (!response.ok) {
-        if (response.status === 401 && authenticated) this.forgetSession();
+        if (response.status === 401 && authenticated) forgetRejectedSession();
         let code = response.status === 401 ? 'SESSION_EXPIRED' : 'REQUEST_FAILED';
         try {
           const parsed = apiErrorSchema.safeParse(await response.json());
@@ -121,7 +141,7 @@ export class SquadApi {
           if (controller.signal.aborted) throw error;
           // A proxy may return an HTML error page.
         }
-        if (code === 'USER_BANNED' && authenticated) this.forgetSession();
+        if (code === 'USER_BANNED' && authenticated) forgetRejectedSession();
         throw new ApiError(code);
       }
       try {

@@ -1,5 +1,7 @@
 import { z } from 'zod';
 export * from './auth.js';
+export * from './providers.js';
+export * from './stats.js';
 
 export const languageSchema = z.enum(['ru', 'en']);
 export type Language = z.infer<typeof languageSchema>;
@@ -30,5 +32,5 @@ export interface PlayerProfileInput {
 export const apiErrorSchema = z.object({
   error: z.object({ code: z.string(), message: z.string(), requestId: z.string().optional() }),
 });
-export const healthResponseSchema = z.object({ status: z.literal('ok'), milestone: z.string() });
+export const healthResponseSchema = z.object({ status: z.literal('ok') });
 export type ApiErrorResponse = z.infer<typeof apiErrorSchema>;

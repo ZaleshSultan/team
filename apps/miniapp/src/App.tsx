@@ -5,6 +5,7 @@ import { api, errorCode } from './api.js';
 import { getTelegramWebApp, openExternalLink, prepareTelegram } from './telegram.js';
 import { isPendingSteamLink, pollSteamLink, type SteamLinkSnapshot } from './steam-polling.js';
 import { createOnboardingSubmission } from './onboarding.js';
+import { StatsCard } from './StatsCard.js';
 
 type LinkAttempt = SteamLinkSnapshot & { url: string };
 type Operation = 'onboarding' | 'telegram' | 'steam' | 'logout' | null;
@@ -321,6 +322,7 @@ export function App() {
               <p className="privacy-note">{t('steam.passwordNote')}</p>
             </>}
           </section>
+          {user.steam && !onboardingRequired && <StatsCard key={user.id} onAuthError={handleError} />}
           {notice && <div className="error-notice" role="alert">{errorText(notice)}
             <button type="button" onClick={() => setNotice(null)} aria-label={t('app.dismiss')}>×</button></div>}
         </div>}

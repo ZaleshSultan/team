@@ -1,0 +1,12 @@
+{
+  "response": {
+    "players": [{
+      "steamid": "76561198000000000",
+      "personaname": "FixturePlayer",
+      "communityvisibilitystate": 3,
+      "profileurl": "https://steamcommunity.com/profiles/76561198000000000/",
+      "avatarfull": "https://avatars.steamstatic.com/fixture_full.jpg",
+      "timecreated": 1250000000
+    }]
+  }
+}

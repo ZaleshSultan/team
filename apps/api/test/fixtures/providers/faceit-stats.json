@@ -1,0 +1,11 @@
+{
+  "player_id": "00000000-0000-4000-8000-000000000001",
+  "game_id": "cs2",
+  "lifetime": { "Average K/D Ratio": "1.23", "Win Rate %": "57", "Matches": "200" },
+  "segments": [
+    { "type": "Map", "mode": "5v5", "label": "de_mirage", "stats": { "Matches": "40" } },
+    { "type": "Map", "mode": "5v5", "label": "de_dust2", "stats": { "Matches": "65" } },
+    { "type": "Map", "mode": "5v5PREMADE", "label": "de_mirage", "stats": { "Matches": "30" } },
+    { "type": "Map", "mode": "5v5", "label": "de_nuke", "stats": { "Matches": "0" } }
+  ]
+}

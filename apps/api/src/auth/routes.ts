@@ -2,7 +2,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { Prisma, type PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import {
-  authResponseSchema, authUserSchema, emptyInputSchema, meResponseSchema,
+  authResponseSchema, authUserSchema, deleteAccountInputSchema, emptyInputSchema, meResponseSchema,
   onboardingInputSchema, steamLinkResponseSchema, steamLinkStatusResponseSchema, telegramAuthInputSchema,
   type AuthUser,
 } from '@squad/shared';
@@ -12,6 +12,7 @@ import { createSecret, hashSecret } from './secrets.js';
 import { verifyTelegramInitData } from './telegram.js';
 import { buildSteamLoginUrl, verifySteamAssertion } from './steam-openid.js';
 import { renderSteamPage } from './browser-page.js';
+import { requireSession as authenticateSession } from './session.js';
 
 const includes = { steamAccount: true, privacySettings: true } as const;
 type User = Prisma.UserGetPayload<{ include: typeof includes }>;
@@ -41,15 +42,7 @@ export function toAuthUser(user: User, config: Config): AuthUser {
 
 export async function registerAuthRoutes(app: FastifyInstance, deps: AuthDependencies) {
   const { config, prisma, fetch: fetcher, now } = deps;
-  const requireSession = async (request: FastifyRequest): Promise<User> => {
-    const header = request.headers.authorization;
-    const match = header?.match(/^Bearer ([A-Za-z0-9_-]{43})$/);
-    if (!match?.[1]) throw new AppError(401, 'SESSION_INVALID', 'A valid session is required');
-    const session = await prisma.session.findUnique({ where: { tokenHash: hashSecret(match[1]) }, include: { user: { include: includes } } });
-    if (!session || session.expiresAt <= now()) throw new AppError(401, 'SESSION_EXPIRED', 'The session has expired');
-    if (session.user.isBanned) throw new AppError(403, 'USER_BANNED', 'This account is banned');
-    return session.user;
-  };
+  const requireSession = (request: FastifyRequest) => authenticateSession(request, { prisma, now });
   const requireOnboarding = (user: User) => {
     if (toAuthUser(user, config).onboarding.required) throw new AppError(409, 'ONBOARDING_REQUIRED', 'Complete onboarding first');
   };
@@ -80,6 +73,14 @@ export async function registerAuthRoutes(app: FastifyInstance, deps: AuthDepende
     const user = await requireSession(request);
     reply.header('Cache-Control', 'no-store');
     return meResponseSchema.parse({ user: toAuthUser(user, config) });
+  });
+  app.delete('/api/me', { config: { rateLimit: { max: 3, timeWindow: '1 minute' } } }, async (request, reply) => {
+    const user = await requireSession(request);
+    deleteAccountInputSchema.parse(request.body);
+    // The foreign keys atomically cascade sessions and all user-owned rows;
+    // reviewer references on other users' reports are SET NULL as defined.
+    await prisma.user.deleteMany({ where: { id: user.id } });
+    return reply.code(204).send();
   });
   app.post('/api/auth/logout', async (request, reply) => {
     await requireSession(request);

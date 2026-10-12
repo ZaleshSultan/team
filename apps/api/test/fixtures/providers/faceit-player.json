@@ -1,0 +1,10 @@
+{
+  "player_id": "00000000-0000-4000-8000-000000000001",
+  "nickname": "FixturePlayer",
+  "faceit_url": "https://www.faceit.com/{lang}/players/FixturePlayer",
+  "steam_id_64": "76561198000000000",
+  "games": {
+    "cs2": { "game_player_id": "76561198000000000", "skill_level": 8, "faceit_elo": 1800 },
+    "csgo": { "game_player_id": "76561198000000001", "skill_level": 10, "faceit_elo": 2200 }
+  }
+}

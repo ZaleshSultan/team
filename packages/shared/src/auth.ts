@@ -36,6 +36,7 @@ export const steamLinkStatusResponseSchema = z.object({
   failureCode: z.string().nullable(),
 });
 export const emptyInputSchema = z.object({}).strict();
+export const deleteAccountInputSchema = z.object({ confirmation: z.literal('DELETE') }).strict();
 export type AuthUser = z.infer<typeof authUserSchema>;
 export type AuthResponse = z.infer<typeof authResponseSchema>;
 export type SteamLinkResponse = z.infer<typeof steamLinkResponseSchema>;

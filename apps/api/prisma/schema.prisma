@@ -50,6 +50,7 @@ model User {
   userGames        UserGame[]
   sessions         Session[]
   steamLinks       SteamLink[]
+  statsSync        StatsSync?
   outgoingRequests TeammateRequest[] @relation("RequestSender")
   incomingRequests TeammateRequest[] @relation("RequestRecipient")
   blocksMade       Block[]           @relation("Blocker")
@@ -60,6 +61,24 @@ model User {
 
   @@index([isBanned])
   @@map("users")
+}
+
+// Persistent scheduling/cooldown and an expiring per-user lease. Upstream errors
+// are fixed internal codes only, never response bodies or credential-bearing URLs.
+model StatsSync {
+  userId            String    @id @map("user_id") @db.Uuid
+  status            String    @default("IDLE") @db.VarChar(10)
+  lastAttemptAt     DateTime? @map("last_attempt_at") @db.Timestamptz(3)
+  lastSuccessAt     DateTime? @map("last_success_at") @db.Timestamptz(3)
+  nextRefreshAt     DateTime  @default(now()) @map("next_refresh_at") @db.Timestamptz(3)
+  manualAvailableAt DateTime? @map("manual_available_at") @db.Timestamptz(3)
+  lastErrorCode     String?   @map("last_error_code") @db.VarChar(80)
+  lockToken         String?   @map("lock_token") @db.Uuid
+  lockedUntil       DateTime? @map("locked_until") @db.Timestamptz(3)
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([nextRefreshAt, userId])
+  @@map("stats_sync")
 }
 
 model PrivacySettings {
