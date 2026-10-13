@@ -54,7 +54,7 @@ const notificationUserSelect = {
   ageConfirmedAt: true, ageMinimumConfirmed: true, rulesAcceptedAt: true, rulesVersion: true,
   steamAccount: { select: { steamId64: true, personaName: true } },
   faceitAccount: { select: { steamId64: true, level: true } },
-  playerProfiles: { where: { game: { slug: 'cs2' } }, select: { nickname: true, roles: true, isPublished: true }, take: 1 },
+  playerProfiles: { where: { game: { slug: 'cs2' } }, select: { nickname: true, roles: true, isPublished: true, moderationHidden: true }, take: 1 },
 } as const;
 
 export class RequestNotificationProcessor {
@@ -114,7 +114,8 @@ export class RequestNotificationProcessor {
           { blockerUserId: recipient.id, blockedUserId: other.id }, { blockerUserId: other.id, blockedUserId: recipient.id },
         ] }, select: { id: true } });
         if (blocked || (event.kind === 'CREATED' && (!recipient.steamAccount || !other.steamAccount
-          || !recipient.playerProfiles[0]?.isPublished || !other.playerProfiles[0]?.isPublished))) { await settle(); return; }
+          || !recipient.playerProfiles[0]?.isPublished || !other.playerProfiles[0]?.isPublished
+          || recipient.playerProfiles[0]?.moderationHidden || other.playerProfiles[0]?.moderationHidden))) { await settle(); return; }
         let username: string | undefined;
         if (event.kind === 'ACCEPTED') {
           try { username = await this.telegram.getUsername(other.telegramId.toString()); }

@@ -1,14 +1,18 @@
 import { z } from 'zod';
-import { notificationSettingsSchema } from '@squad/shared';
+import { adminSettingsSchema, moderationSettingsSchema, notificationSettingsSchema } from '@squad/shared';
+
+const urlProtocol = (value: string, protocols: string[]) => URL.canParse(value) && protocols.includes(new URL(value).protocol);
 
 const configSchema = z.object({
   BOT_TOKEN: z.string().regex(/^\d+:[A-Za-z0-9_-]{20,}$/, 'must be a valid Telegram bot token'),
-  MINIAPP_URL: z.string().url().refine((value) => new URL(value).protocol === 'https:', 'must use HTTPS'),
-  DATABASE_URL: z.string().url().refine((value) => ['postgres:', 'postgresql:'].includes(new URL(value).protocol)),
-  REDIS_URL: z.string().url().refine((value) => ['redis:', 'rediss:'].includes(new URL(value).protocol)),
+  MINIAPP_URL: z.string().url().refine((value) => urlProtocol(value, ['https:']), 'must use HTTPS'),
+  DATABASE_URL: z.string().url().refine((value) => urlProtocol(value, ['postgres:', 'postgresql:'])),
+  REDIS_URL: z.string().url().refine((value) => urlProtocol(value, ['redis:', 'rediss:'])),
   AGE_MINIMUM: z.coerce.number().int().min(13).max(99).default(18),
   RULES_VERSION: z.string().min(1).max(40).default('2026-10-07'),
   ...notificationSettingsSchema.shape,
+  ...adminSettingsSchema.shape,
+  REPORT_RETENTION_DAYS: moderationSettingsSchema.shape.REPORT_RETENTION_DAYS,
 });
 
 export function loadConfig(environment: NodeJS.ProcessEnv) {
