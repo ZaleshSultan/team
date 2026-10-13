@@ -1,5 +1,9 @@
 # M3 review hardening
 
+Historical M3 review record. M7 supersedes the report-deletion behavior below:
+reports by the deleted user cascade; reports about them are anonymized and retained
+temporarily, and audit rows survive. See [current moderation policy](moderation.md).
+
 These changes are committed separately from M3. At the start of the task, the
 Squad working tree was clean: no uncommitted `compose.yaml` changes existed.
 

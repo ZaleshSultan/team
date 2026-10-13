@@ -11,6 +11,7 @@ COPY apps/api/prisma apps/api/prisma
 RUN pnpm install --frozen-lockfile
 COPY apps apps
 COPY packages packages
+COPY scripts scripts
 RUN pnpm db:generate && pnpm build
 
 FROM build AS api

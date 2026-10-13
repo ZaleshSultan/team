@@ -1,0 +1,14 @@
+[Unit]
+Description=Squad PostgreSQL backup
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+# Adjust this path and user to your checkout before installing this example.
+WorkingDirectory=/opt/squad
+User=squad
+Environment=BACKUP_KEEP=14
+Environment=COMPOSE_FILE=/opt/squad/compose.yaml:/opt/squad/compose.production.yaml
+ExecStart=/usr/bin/bash /opt/squad/scripts/backup.sh
+UMask=0077

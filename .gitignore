@@ -10,3 +10,4 @@ coverage/
 .local/
 *.tsbuildinfo
 artifacts/
+backups/

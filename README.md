@@ -1,6 +1,6 @@
 # Squad — Telegram CS2 teammates
 
-TypeScript MVP built in reviewable milestones. **M1–M6 are implemented; stopped for review.** Telegram authentication, consent, external Steam linking, cached Steam/FACEIT stats and the CS2 profile editor are followed by a player feed, teammate requests, bot notifications and accepted-request contact exchange. Moderation remains M7. See [M6 requests and contacts](docs/requests.md), [notification operations](docs/notifications.md), [M5 feed and performance](docs/feed.md), [M4 profiles and privacy](docs/profile.md), [M3 stats and operations](docs/stats.md) and [API mapping verification limits](docs/api-mappings.md).
+TypeScript MVP built in reviewable milestones. **M1–M7 are implemented; stopped for review.** Telegram authentication, consent, external Steam linking, cached Steam/FACEIT stats, CS2 profile editor, filtered feed, teammate requests and accepted contact exchange now include reports, reversible automatic hiding, block management and private bot administration. See [M7 moderation](docs/moderation.md), [home server deployment](docs/deployment.md), [dependency audit and limits](docs/security-audit.md), [M6 requests and contacts](docs/requests.md), [notification operations](docs/notifications.md), [M5 feed and performance](docs/feed.md), [M4 profiles and privacy](docs/profile.md), [M3 stats and operations](docs/stats.md) and [API mapping verification limits](docs/api-mappings.md).
 
 ## Requirements
 
@@ -63,7 +63,7 @@ In bash, use `export TEST_DATABASE_URL='...'`, `DATABASE_URL="$TEST_DATABASE_URL
 
 ```text
 apps/api       Fastify, validated config, Prisma schema/migrations
-apps/bot       grammY launcher and BullMQ notification worker; moderation in M7
+apps/bot       grammY launcher, private moderation commands, notification worker
 apps/miniapp   React/Vite, Russian default and English translations
 packages/shared Zod schemas and API types shared by clients and server
 docs/          Database and authentication design notes
@@ -81,9 +81,11 @@ Steam OpenID verifies identity and needs no Steam API key. `STEAM_WEB_API_KEY` a
 
 `share_steam_activity` defaults to false. The strict public player card always omits account identifiers and the library; exact CS2 hours appear only when sharing is enabled. The owner can always inspect their cache. Session/start-link/state/browser secrets are stored only as hashes; session tokens stay in client memory. Health responses expose no credentials. API logs exclude authorization and URLs, including provider URLs with Steam keys. [Authentication and external Steam flow](docs/authentication.md) describes the protocol, endpoints, state transitions, and test boundaries.
 
-Request lists and new-request notifications contain public card data and no Telegram username/ID. Acceptance re-checks both current usernames with Telegram `getChat`; an unavailable contact leaves the request pending. Only the two participants can obtain the other participant's current username, only on an accepted request, with another live check each time. Usernames are never stored in request/outbox records or Redis jobs, and blocks revoke access to accepted contacts. Declining sends no notification. See [contact visibility and limitations](docs/requests.md#contact-visibility).
+Request lists and new-request notifications contain public card data and no Telegram username/ID. Acceptance re-checks both current usernames with Telegram `getChat`; an unavailable contact leaves the request pending. The two participants can obtain the other participant's current username on an accepted request, with another live check each time. Configured moderators have a separate, audited Show contact action in the private bot. Usernames are never stored in request/outbox records or Redis jobs, and blocks revoke access to accepted contacts. Declining sends no notification. See [contact visibility and limitations](docs/requests.md#contact-visibility).
 
 ## Deployment approach
+
+The complete [deployment guide](docs/deployment.md) covers first start, backup-first M6→M7 update commands, migrations, HTTPS/tunnel changes, restore, token rotation and smoke/header checks. [Manual M7 review](docs/moderation.md#migration-and-review) uses two test players and one configured admin. No automatic production deployment is performed.
 
 Target: a single HTTPS server using Docker Compose. Set real HTTPS origins and credentials in the server's `.env`, use a strong URL-safe database password (e.g. generated hex), and keep DB/cache ports bound to loopback. The full app uses three images from the Dockerfile: API, bot and static Mini App/nginx. Build and migrate before launch:
 
@@ -105,6 +107,7 @@ The frontend listens at `127.0.0.1:8088`. Put an HTTPS proxy on the host in fron
 your.example.com {
     reverse_proxy 127.0.0.1:8088 {
         header_up X-Forwarded-For {remote_host}
+        header_up CF-Connecting-IP {remote_host}
     }
     # Avoid access logging full query strings containing one-time secrets.
 }
@@ -130,4 +133,40 @@ Automated provider responses are injected for repeatable tests. Live Telegram/St
 - M4: CS2 profile editor, publication checklist, badges, privacy-safe preview and account deletion UI.
 - M5: implemented — CS2 feed, provider-validated filters, signed cursor pagination, privacy-safe cards and guarded performance tooling.
 - M6: implemented — teammate requests, rolling daily quota, expiry, queued notifications, fresh accepted contacts, minimal blocks and requests UI.
-- M7: reports/blocks, bot admin commands, moderation and final validation.
+- M7: implemented — private reports, reversible auto-hide, paginated blocks, private bot admin/confirmations/audit, retention, security headers, backups, deployment guide and final validation.
+
+## Environment settings
+
+All app settings are parsed at startup, with RU as the default language. Keep real values only in private `.env`; `.env.example` documents every variable. Compose requires a nonempty database password. Provider keys are optional.
+
+| Setting | Default / purpose |
+| --- | --- |
+| `BOT_TOKEN`, `BOT_USERNAME` | Required BotFather secret and username without `@` |
+| `DATABASE_URL`, `REDIS_URL` | Required connections; Compose uses internal addresses |
+| `POSTGRES_PASSWORD` | Required, strong URL-safe secret; must match existing DB role |
+| `POSTGRES_USER`, `POSTGRES_DB` | `squad`, `squad` |
+| `POSTGRES_PORT`, `REDIS_PORT`, `APP_PORT` | Loopback `55433`, `6379`, `8088` |
+| `NODE_ENV`, `LOG_LEVEL`, `HOST`, `PORT` | `development`, `info`, `0.0.0.0`, `3000`; Compose sets production |
+| `MINIAPP_URL`, `PUBLIC_API_URL`, `MINIAPP_ORIGIN` | Required HTTPS app URL/API origin/CORS origin |
+| `VITE_API_BASE_URL`, `DEV_TUNNEL_HOST` | Blank same-origin API; exact Vite tunnel hostname |
+| `TRUST_PROXY` | `false`; production override trusts only nginx's fixed IP |
+| `SESSION_TTL_SECONDS`, `TELEGRAM_AUTH_MAX_AGE_SECONDS`, `STEAM_LINK_TTL_SECONDS` | `3600`, `300`, `600` |
+| `AGE_MINIMUM`, `RULES_VERSION` | `18`, `2026-10-07`; changes require fresh consent |
+| `STEAM_WEB_API_KEY`, `FACEIT_API_KEY` | Optional cached stats credentials |
+| `STATS_REFRESH_HOURS`, `STATS_WORKER_CONCURRENCY` | `6`, `3` |
+| `STATS_MANUAL_COOLDOWN_SECONDS` | `300` |
+| `STATS_STEAM_INTERVAL_MS`, `STATS_FACEIT_INTERVAL_MS` | `1000`, `1000`; shared provider spacing |
+| `FEED_REQUIRES_PUBLISHED_PROFILE`, `FEED_RATE_LIMIT_PER_MINUTE` | `true`, `60` |
+| `REQUESTS_PER_DAY`, `REQUEST_TTL_DAYS`, `REQUESTS_RATE_LIMIT_PER_MINUTE` | `10` rolling daily, `7`, `60` |
+| `NOTIFICATION_CONCURRENCY`, `NOTIFICATION_RATE_LIMIT_PER_SECOND` | `3`, `25` |
+| `NOTIFICATION_MAX_ATTEMPTS`, `NOTIFICATION_BACKOFF_MS`, `TELEGRAM_CONTACT_TIMEOUT_MS` | `5`, `1000`, `5000` |
+| `ADMIN_TELEGRAM_IDS` | Empty disables admins; comma-separated positive numeric IDs, never usernames |
+| `SUPPORT_CONTACT` | Empty fallback, or `@username` / `https://t.me/username` |
+| `REPORTS_PER_DAY` | `10` rolling 24-hour reports per user |
+| `REPORTS_AUTO_HIDE_THRESHOLD` | `3` distinct established Steam-linked reporters within seven days |
+| `REPORTS_RATE_LIMIT_PER_MINUTE` | `10` per authenticated user |
+| `REPORT_RETENTION_DAYS` | `180` after resolution; request retention fixed at 90 days |
+| `ALLOW_SYNTHETIC_SEED` | `0`; never enable against real data |
+| `BACKUP_KEEP`, `BACKUP_DIR`, `SMOKE_ORIGIN` | Host script env: `14`, `./backups`, `http://127.0.0.1:8088`; export explicitly, scripts do not source `.env` |
+
+New M7 runtime settings: `SUPPORT_CONTACT`, `REPORTS_PER_DAY`, `REPORTS_AUTO_HIDE_THRESHOLD`, `REPORTS_RATE_LIMIT_PER_MINUTE`, `REPORT_RETENTION_DAYS`. `ADMIN_TELEGRAM_IDS` existed as a placeholder and is now strictly validated/enforced. There are no new runtime packages. The remaining five dependency advisory entries require separately reviewed major tooling upgrades; see [audit details](docs/security-audit.md).

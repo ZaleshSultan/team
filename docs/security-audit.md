@@ -1,0 +1,19 @@
+# M7 dependency audit and verification limits
+
+`pnpm audit --json` was run on 2026-10-13. Initially: six advisory entries (two critical, two high, two moderate). A narrow pnpm override updates Prisma config's transitive `effect` from 3.18.4 to the compatible 3.20 patch line, fixing [GHSA-38f7-945m-qr2g](https://github.com/advisories/GHSA-38f7-945m-qr2g). No new runtime dependency was added. Prisma generation/migrations, compilation and all existing tests are checked after this minor update.
+
+The final audit still exits nonzero: **five advisory entries — two critical, one high, two moderate**. This is a report of package advisories, not proof of an exploitable application route. Major upgrades were intentionally not applied under the requested patch/minor-only scope.
+
+| Package installed | Severity / advisory | Patched version | Why retained |
+| --- | --- | --- | --- |
+| deepmerge-ts 7.1.5 | High, [recursive merge stack exhaustion](https://github.com/advisories/GHSA-ggr8-5vv4-36mx) | 8.0.0 | Prisma config dependency; major 7→8 needs Prisma/tooling compatibility work |
+| vitest 3.2.7 | Moderate, [redirect mock path traversal](https://github.com/advisories/GHSA-82fw-gwwq-j7x9) | 4.1.11 | Major Vitest migration |
+| @vitest/mocker 3.2.7 | Moderate, same [redirect mock advisory](https://github.com/advisories/GHSA-82fw-gwwq-j7x9) | 4.1.11 | Comes from Vitest; migrate together |
+| tinypool 1.1.1 | Critical, [worker-options prototype-pollution gadget](https://github.com/advisories/GHSA-5gmw-xhrv-c9v3) | 2.1.1 | Vitest dependency; incompatible major must be reviewed |
+| tinypool 1.1.1 | Critical, [run-options prototype-pollution gadget](https://github.com/advisories/GHSA-85c8-ppgw-ccpr) | 2.1.2 | Same major migration; 2.1.1 alone does not fix both |
+
+Paths are Prisma→@prisma/config→deepmerge-ts and Vitest→@vitest/mocker/tinypool. The app does not expose a Vitest server, mock redirect handler or worker pool endpoint. Only run trusted tests/configuration, keep dev ports off the Internet, and plan a separate Vitest/Prisma upgrade with the full suite. API/bot Docker targets currently inherit the build workspace and therefore still contain development tooling, even though those libraries are not called by application request handlers. This image layout is a material limitation: production dependency pruning and separately reviewed major upgrades remain follow-up work. The nginx image contains only compiled frontend assets.
+
+Unit tests use fixtures/doubles and no provider keys, DB or live bot. Integration tests use a newly initialized loopback PostgreSQL **18** database `squad_m7_test`, isolated from the running stack; production Compose uses PostgreSQL **16**, so container-version verification remains necessary. UI checks use an actual Mini App with mocked HTTP/Telegram bridges on a dedicated local port. Backup/smoke tests substitute Docker/HTTP/flock commands: they prove parsing, retention and failure/secret-output behavior, not a real server dump/restore or Linux file lock. Real Telegram deliveries, admin identity, mobile WebViews, external Steam return, Cloudflare/ngrok access and restoring a production-sized backup require the operator's dedicated test environment.
+
+The Docker Desktop engine was unavailable during this work, so image build/container launch and Linux health checks are not claimed as verified. Compose configuration validated using only example settings and an override clearing app env files; the build failed at the unavailable engine pipe. The compiled app was served via isolated **nginx/Windows 1.30.5** on loopback port 5191, using the checked-in server/header configuration with only local paths/listener/upstream adapted. nginx syntax validation and the real fetch/header/bundle/source-map checker passed. This does not validate the Linux image or the destination server's proxy/CDN headers. Run the guide's post-deployment checks through your own HTTPS origin too.

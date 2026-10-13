@@ -1,6 +1,6 @@
 # M6: teammate requests and contacts
 
-M6 adds invitations from CS2 feed cards, incoming/outgoing request history, live accepted-contact checks, minimal blocking and bot notifications. Moderation/report UI remains M7. Russian is the default UI language, with matching English translations. The running stack, production database and live bot are not used during development/testing.
+M6 adds invitations from CS2 feed cards, incoming/outgoing request history, live accepted-contact checks, minimal blocking and bot notifications. [M7 moderation](moderation.md) now extends this with reports and block management. Russian is the default UI language, with matching English translations. The running stack, production database and live bot are not used during development/testing.
 
 ## Model and migration
 
@@ -49,7 +49,7 @@ Requests expire after seven days by default. The API's BullMQ maintenance schedu
 
 Reads show due pending rows as EXPIRED, the badge excludes them, and the feed immediately stops excluding them even before the worker updates storage. Accepting a due pending row persists its expiry and returns `REQUEST_EXPIRED`. Sending to a pair also lazily expires its due pending rows before checking uniqueness.
 
-A block transaction cancels all pending requests between the pair and hides them from discovery. Blocking also denies subsequent accepted-contact reads and suppresses queued notifications. Unblocking removes only the caller's block; it does not reopen cancelled requests or remove a reciprocal block. Minimal block controls require confirmation in the UI; moderation extensions arrive in M7.
+A block transaction cancels all pending requests between the pair and hides them from discovery. Blocking also denies subsequent accepted-contact reads and suppresses queued notifications. Unblocking removes only the caller's block; it does not reopen cancelled requests or remove a reciprocal block. Minimal block controls require confirmation in the UI; M7 adds a [personal block list and historical-report path](moderation.md#reports-and-blocks).
 
 ## Contact visibility
 

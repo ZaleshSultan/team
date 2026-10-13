@@ -14,7 +14,9 @@
     "dev:miniapp": "pnpm --filter @squad/shared build && dotenv -e .env -- pnpm --filter @squad/miniapp dev",
     "build": "pnpm --filter @squad/shared build && pnpm -r --filter @squad/api --filter @squad/bot --filter @squad/miniapp build",
     "typecheck": "pnpm --filter @squad/shared build && pnpm -r typecheck",
-    "test": "pnpm --filter @squad/shared build && pnpm -r --if-present test",
+    "test": "pnpm --filter @squad/shared build && pnpm -r --if-present test && pnpm test:ops",
+    "test:ops": "node --test scripts/test/*.test.mjs",
+    "check:headers": "node scripts/check-security-headers.mjs",
     "test:integration": "pnpm --filter @squad/shared build && pnpm --filter @squad/api test:integration",
     "db:generate": "pnpm --filter @squad/api db:generate",
     "db:migrate": "dotenv -e .env -- pnpm --filter @squad/api db:migrate",
@@ -25,6 +27,7 @@
     "dev:synthetic:cleanup": "pnpm --filter @squad/shared build && pnpm --filter @squad/api dev:synthetic:cleanup",
     "dev:feed:benchmark": "pnpm --filter @squad/shared build && pnpm --filter @squad/api dev:feed:benchmark"
   },
+  "pnpm": { "overrides": { "@prisma/config>effect": "~3.20.0" } },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^22.19.0",
