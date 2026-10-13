@@ -8,6 +8,8 @@ import { createOnboardingSubmission } from './onboarding.js';
 import { StatsCard } from './StatsCard.js';
 import { SteamLinkProgress } from './SteamLinkProgress.js';
 import { AccountDeletionSection, ProfileScreen } from './ProfileScreen.js';
+import { FeedScreen } from './FeedScreen.js';
+import { canLeaveProfile } from './feed.js';
 
 type LinkAttempt = SteamLinkSnapshot & { url: string };
 type Operation = 'onboarding' | 'telegram' | 'steam' | 'logout' | null;
@@ -37,6 +39,7 @@ export function App() {
   const [rulesVersionAccepted, setRulesVersionAccepted] = useState<string | null>(null);
   const [shareSteamActivity, setShareSteamActivity] = useState(false);
   const [profileDirty, setProfileDirty] = useState(false);
+  const [screen, setScreen] = useState<'profile' | 'feed'>('profile');
 
   useEffect(() => {
     const releaseTheme = prepareTelegram();
@@ -47,6 +50,7 @@ export function App() {
     void api.authenticate(getTelegramWebApp()?.initData ?? '').then((result) => {
       if (disposed) return;
       setUser(result.user);
+      setScreen('profile');
       setExpiresAt(result.expiresAt);
       setMinimumAgeConfirmed(result.user.onboarding.ageConfirmed ? result.user.onboarding.minimumAge : null);
       setRulesVersionAccepted(result.user.onboarding.rulesAccepted ? result.user.onboarding.rulesVersion : null);
@@ -194,6 +198,13 @@ export function App() {
     setOperation(null);
   }
 
+  function navigate(next: 'profile' | 'feed') {
+    if (next === screen) return;
+    if (screen === 'profile' && !canLeaveProfile(profileDirty, () => window.confirm(t('feed.leaveProfile')))) return;
+    setProfileDirty(false);
+    setScreen(next);
+  }
+
   const pendingLink = link && isPendingSteamLink(link.status);
   const onboardingRequired = user?.onboarding.required || !user?.username;
   const ageConfirmed = Boolean(user && minimumAgeConfirmed === user.onboarding.minimumAge);
@@ -215,7 +226,7 @@ export function App() {
       </header>
 
       <main>
-        <section className="hero">
+        {(screen === 'profile' || !user) && <section className="hero">
           <div className="game-tag"><span className="live-dot" />{t('app.game')}</div>
           <p className="eyebrow">{t('home.eyebrow')}</p>
           <h1>{t('home.headline')}<br /><span>{t('home.headlineAccent')}</span></h1>
@@ -224,7 +235,7 @@ export function App() {
             <div className="art-grid" /><div className="art-orbit orbit-one" /><div className="art-orbit orbit-two" />
             <Crosshair className="art-crosshair" />
           </div>
-        </section>
+        </section>}
 
         {loading && <section className="account-panel state-panel" aria-live="polite" aria-busy="true">
           <span className="spinner" aria-hidden="true" /><h2>{t('auth.loading')}</h2><p>{t('auth.loadingDetail')}</p>
@@ -238,7 +249,12 @@ export function App() {
             onClick={() => setLoginGeneration((generation) => generation + 1)}>{t('auth.retry')}</button>}
         </section>}
 
-        {!loading && user && <div className="account-layout">
+        {!loading && user && <>
+          <nav className="squad-navigation" aria-label={t('feed.navigation')}>
+            <button type="button" aria-current={screen === 'profile' ? 'page' : undefined} onClick={() => navigate('profile')}>{t('feed.profileTab')}</button>
+            <button type="button" aria-current={screen === 'feed' ? 'page' : undefined} onClick={() => navigate('feed')}>{t('feed.feedTab')}</button>
+          </nav>
+          {screen === 'feed' ? <FeedScreen key={`feed-${user.id}`} onProfile={() => navigate('profile')} onAuthError={handleError} /> : <div className="account-layout">
           <section className="account-panel">
             <div className="section-heading"><span className="step-label">{t('identity.step')}</span>
               <span className="badge">{t('identity.telegramVerified')}</span></div>
@@ -321,9 +337,10 @@ export function App() {
           <AccountDeletionSection key={`delete-${user.id}`} onAuthError={handleError} onDeleted={() => {
               api.forgetSession(); setUser(null); setLink(null); setExpiresAt(null); setProfileDirty(false); setAuthError('ACCOUNT_DELETED');
             }} />
+        </div>}
           {notice && <div className="error-notice" role="alert">{errorText(notice)}
             <button type="button" onClick={() => setNotice(null)} aria-label={t('app.dismiss')}>×</button></div>}
-        </div>}
+        </>}
       </main>
       <footer><span>{t('app.footer')}</span><span>{t('app.edition')}</span></footer>
     </div>

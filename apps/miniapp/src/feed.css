@@ -1,0 +1,63 @@
+.squad-navigation { display: flex; gap: 8px; padding: 20px 0; }
+.squad-navigation button { min-width: 100px; min-height: 44px; padding: 11px 20px; border: 1px solid var(--border); color: var(--text); background: var(--surface); border-radius: 9px; font-size: 13px; font-weight: 700; }
+.squad-navigation button[aria-current='page'] { color: var(--button-text); background: var(--button-background); border-color: var(--button-background); }
+.feed-screen { padding: 16px 0 28px; min-width: 0; }
+.feed-heading { display: flex; justify-content: space-between; align-items: center; gap: 15px; }
+.feed-heading .eyebrow { margin: 0 0 12px; }
+.feed-heading h1 { font-size: clamp(30px, 5vw, 42px); letter-spacing: -1.3px; }
+.feed-description { color: var(--muted); font-size: 12px; line-height: 1.8; }
+.feed-toolbar { display: flex; align-items: center; gap: 15px; margin-top: 22px; }
+.feed-toolbar p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.7; }
+.feed-filter-count { border: 1px solid currentColor; border-radius: 50%; padding: 0 5px; margin-left: 8px; }
+.feed-filter-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 15px 0; }
+.feed-filter-summary > div { display: flex; flex-wrap: wrap; gap: 6px; }
+.feed-filter-summary span { border: 1px solid var(--border); background: var(--surface); color: var(--muted); border-radius: 6px; padding: 6px 9px; font-size: 10px; }
+.feed-filter-summary .text-button { min-height: 44px; }
+.feed-pull-hint, .feed-end { font-size: 11px; color: var(--muted); line-height: 1.7; text-align: center; }
+.feed-pull-hint { margin: 4px 0 18px; }
+.feed-grid { display: grid; gap: 16px; }
+.feed-card { background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 14px; padding: 22px; min-width: 0; overflow-wrap: anywhere; }
+.feed-card-heading { display: flex; justify-content: space-between; gap: 15px; margin-bottom: 15px; }
+.feed-card-heading h2 { margin: 0; font-size: 21px; letter-spacing: -.5px; line-height: 1.4; }
+.feed-faceit { display: grid; grid-template-columns: 1fr 1fr; text-align: right; gap: 3px 7px; flex-shrink: 0; align-items: center; }
+.feed-faceit > span { color: var(--muted); font-size: 9px; font-weight: 700; }
+.feed-faceit strong { color: var(--accent); font-size: 22px; grid-row: 1 / 3; grid-column: 2; }
+.feed-faceit small { font-size: 10px; color: var(--text); }
+.feed-card .profile-badges { margin-bottom: 19px; }
+.feed-card-section { margin-top: 17px; }
+.feed-card-section h3 { font-size: 10px; color: var(--muted); font-weight: 500; margin: 0 0 8px; }
+.feed-card-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.feed-card-chip { border: 1px solid var(--border); border-radius: 6px; background: var(--surface-raised); padding: 6px 9px; font-size: 11px; }
+.feed-card-meta { display: flex; flex-wrap: wrap; gap: 10px 15px; margin-top: 17px; color: var(--muted); font-size: 11px; line-height: 1.8; }
+.feed-card-bio { white-space: pre-wrap; font-size: 12px; line-height: 1.8; border-top: 1px solid var(--border); padding-top: 16px; margin: 19px 0 0; }
+.feed-ban-warning { color: var(--warning); border: 1px solid var(--border); border-radius: 6px; padding: 10px; font-size: 11px; line-height: 1.7; margin-bottom: 0; }
+.feed-card-note { color: var(--muted); font-size: 10px; line-height: 1.7; margin-bottom: 0; }
+.feed-activity { display: flex; flex-wrap: wrap; gap: 12px 26px; border-top: 1px solid var(--border); margin: 18px 0 0; padding-top: 16px; }
+.feed-activity dt { font-size: 10px; color: var(--muted); margin-bottom: 7px; }
+.feed-activity dd { font-size: 13px; margin: 0; font-weight: 600; }
+.feed-state { margin-bottom: 16px; }
+.feed-state h2 { margin-top: 0; }
+.feed-state p, .feed-state li { color: var(--muted); font-size: 12px; line-height: 1.8; }
+.feed-state ul { margin: 16px 0 20px; padding-left: 18px; }
+.feed-error p { color: var(--error); }
+.feed-more { display: flex; margin: 24px auto 0; min-width: 180px; }
+.feed-loading { margin-top: 16px; }
+.feed-skeleton { display: grid; gap: 16px; min-height: 240px; }
+.feed-skeleton span { background: var(--surface-raised); border: 1px solid var(--border); border-radius: 5px; height: 22px; animation: feed-pulse 1.5s ease-in-out infinite alternate; }
+.feed-skeleton span:first-child { width: 60%; height: 27px; }
+.feed-skeleton span:nth-child(3) { width: 80%; }
+.feed-visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.feed-sheet-overlay { position: fixed; inset: 0; z-index: 20; background: #0009; display: flex; align-items: flex-end; justify-content: center; padding: 20px 10px 0; }
+.feed-sheet { width: min(100%, 620px); max-height: calc(100dvh - 30px); overflow-y: auto; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 17px 17px 0 0; padding: 22px 20px max(22px, env(safe-area-inset-bottom)); outline: none; }
+.feed-sheet-heading { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+.feed-sheet-heading h2 { font-size: 22px; letter-spacing: -.5px; margin: 0; }
+.feed-sheet .profile-chip-field, .feed-level-field { margin-top: 23px; }
+.feed-level-field { border: 0; padding: 0; min-width: 0; }
+.feed-level-field > legend { font-size: 13px; font-weight: 600; padding: 0; }
+.feed-level-range { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 12px; }
+.feed-sheet-actions { position: sticky; bottom: calc(-1 * max(22px, env(safe-area-inset-bottom))); display: flex; justify-content: space-between; gap: 20px; align-items: center; margin-top: 20px; border-top: 1px solid var(--border); background: var(--surface); padding: 15px 0; }
+.feed-sheet-actions .text-button { min-height: 44px; }
+@keyframes feed-pulse { to { opacity: .5; } }
+@media (min-width: 760px) { .feed-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .feed-sheet-overlay { align-items: center; padding: 20px; } .feed-sheet { border-radius: 17px; } }
+@media (max-width: 400px) { .feed-card { padding: 18px; } .feed-heading { align-items: flex-start; } .feed-heading .secondary-button { padding: 10px; } .feed-heading h1 { font-size: 28px; } .feed-toolbar { align-items: flex-start; } }
+@media (prefers-reduced-motion: reduce) { .feed-skeleton span { animation: none; } }

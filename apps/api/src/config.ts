@@ -34,6 +34,8 @@ const envSchema = z.object({
   RULES_VERSION: z.string().min(1).max(40).default('2026-10-07'),
   TRUST_PROXY: trustedProxyEnv,
   REQUESTS_PER_DAY: z.coerce.number().int().min(1).max(100).default(10),
+  FEED_REQUIRES_PUBLISHED_PROFILE: z.enum(['true', 'false']).default('true').transform((value) => value === 'true'),
+  FEED_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(1).max(600).default(60),
   STATS_REFRESH_HOURS: z.coerce.number().int().min(1).max(24).default(6),
   STATS_WORKER_CONCURRENCY: z.coerce.number().int().min(1).max(10).default(3),
   STATS_MANUAL_COOLDOWN_SECONDS: z.coerce.number().int().min(120).max(3600).default(300),

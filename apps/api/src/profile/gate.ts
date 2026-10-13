@@ -9,7 +9,7 @@ interface PublishUser {
   steamAccount: { steamId64: bigint } | null;
 }
 
-export function profileInput(profile: PlayerProfile) {
+export function profileInput(profile: Pick<PlayerProfile, 'nickname' | 'roles' | 'lookingFor' | 'playTimes' | 'languages' | 'region' | 'hasMic' | 'bio'>) {
   return { nickname: profile.nickname, roles: profile.roles, lookingFor: profile.lookingFor,
     playTimes: profile.playTimes, languages: profile.languages, region: profile.region,
     hasMic: profile.hasMic, bio: profile.bio };

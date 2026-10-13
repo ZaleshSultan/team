@@ -16,7 +16,10 @@
     "db:migrate": "dotenv -e .env -- pnpm --filter @squad/api db:migrate",
     "db:dev": "dotenv -e .env -- pnpm --filter @squad/api db:dev",
     "db:seed": "dotenv -e .env -- pnpm --filter @squad/api db:seed",
-    "db:validate": "dotenv -e .env -- pnpm --filter @squad/api db:validate"
+    "db:validate": "dotenv -e .env -- pnpm --filter @squad/api db:validate",
+    "dev:synthetic:seed": "pnpm --filter @squad/shared build && pnpm --filter @squad/api dev:synthetic:seed",
+    "dev:synthetic:cleanup": "pnpm --filter @squad/shared build && pnpm --filter @squad/api dev:synthetic:cleanup",
+    "dev:feed:benchmark": "pnpm --filter @squad/shared build && pnpm --filter @squad/api dev:feed:benchmark"
   },
   "devDependencies": {
     "@types/node": "^22.19.0",

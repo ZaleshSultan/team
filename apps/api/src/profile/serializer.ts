@@ -5,7 +5,9 @@ import { profileInput } from './gate.js';
 import { AppError } from '../errors.js';
 
 export interface PublicCardSource {
-  profile: PlayerProfile; steam: SteamAccount | null; faceit: FaceitAccount | null;
+  profile: Pick<PlayerProfile, 'id' | 'nickname' | 'roles' | 'lookingFor' | 'playTimes' | 'languages' | 'region' | 'hasMic' | 'bio'>;
+  steam: Pick<SteamAccount, 'steamId64' | 'personaName' | 'vacBans' | 'gameBans' | 'communityBanned' | 'economyBan'> | null;
+  faceit: Pick<FaceitAccount, 'steamId64' | 'level' | 'elo'> | null;
   shareSteamActivity: boolean; cs2Game: Pick<UserGame, 'playtimeTotal' | 'playtime2weeks'> | null;
 }
 

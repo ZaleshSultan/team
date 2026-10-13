@@ -17,6 +17,8 @@ import { sessionRateLimitKey } from './auth/session.js';
 import { registerProfileRoutes } from './profile/routes.js';
 import { ProfileValidationError } from './games/cs2.js';
 import { PublishGateError } from './profile/errors.js';
+import { registerFeedRoutes } from './feed/routes.js';
+import { FeedAccessError } from './feed/access.js';
 
 export interface AppDependencies {
   prisma?: PrismaClient;
@@ -62,7 +64,7 @@ export async function buildApp(config: Config, dependencies: AppDependencies = {
       return reply.code(400).send({ error: { code: error.code, message: 'Review the highlighted profile fields',
         field: error.issues[0]?.field, issues: error.issues, requestId: request.id } });
     }
-    if (error instanceof PublishGateError) {
+    if (error instanceof PublishGateError || error instanceof FeedAccessError) {
       return reply.code(error.statusCode).send({ error: { code: error.code, message: error.message,
         requirements: error.requirements, requestId: request.id } });
     }
@@ -95,5 +97,6 @@ export async function buildApp(config: Config, dependencies: AppDependencies = {
   }, undefined, dependencies.now);
   await registerStatsRoutes(app, { config, prisma, stats, now: dependencies.now ?? (() => new Date()) });
   await registerProfileRoutes(app, { config, prisma, now: dependencies.now ?? (() => new Date()) });
+  await registerFeedRoutes(app, { config, prisma, now: dependencies.now ?? (() => new Date()) });
   return app;
 }

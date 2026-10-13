@@ -7,14 +7,17 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.scripts.json",
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:dev": "prisma migrate dev",
     "db:seed": "prisma db seed",
-    "db:validate": "prisma validate"
+    "db:validate": "prisma validate",
+    "dev:synthetic:seed": "tsx scripts/synthetic.ts seed",
+    "dev:synthetic:cleanup": "tsx scripts/synthetic.ts cleanup",
+    "dev:feed:benchmark": "tsx scripts/feed-benchmark.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

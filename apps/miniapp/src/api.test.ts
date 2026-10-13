@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { SquadApi } from './api.js';
 import { statsFixture } from './stats-fixture.js';
 import { profileFixture, profileInputFixture, publicProfileFixture } from './profile-fixture.js';
+import { applyFeedPage, defaultFeedFilters } from './feed.js';
 
 const now = Date.parse('2026-10-07T12:00:00.000Z');
 const authPayload = {
@@ -20,6 +21,55 @@ const authPayload = {
 function response(value: unknown, status = 200): Response {
   return new Response(JSON.stringify(value), { status, headers: { 'Content-Type': 'application/json' } });
 }
+
+describe('feed API client', () => {
+  it('loads subsequent cursor pages with validated public cards and per-session headers', async () => {
+    const second = { ...publicProfileFixture, id: 'aeadbc28-9acc-43f6-bf5d-e6178c0ba33d' };
+    const send = vi.fn<typeof fetch>().mockResolvedValueOnce(response(authPayload))
+      .mockResolvedValueOnce(response({ items: [publicProfileFixture], nextCursor: 'opaque-next' }))
+      .mockResolvedValueOnce(response({ items: [second], nextCursor: null }));
+    const client = new SquadApi('', send, () => now);
+    await client.authenticate('signed-telegram-data');
+    const filters = { ...defaultFeedFilters(), roles: ['awp', 'support'], hasMic: false };
+    const page1 = await client.feed(filters);
+    const page2 = await client.feed(filters, page1.nextCursor);
+    expect(applyFeedPage(page1, page2, true).items.map((card) => card.id)).toEqual([publicProfileFixture.id, second.id]);
+    const first = new URL(String(send.mock.calls[1]![0]), 'https://squad.test');
+    const next = new URL(String(send.mock.calls[2]![0]), 'https://squad.test');
+    expect(first.pathname).toBe('/api/feed/cs2'); expect(first.searchParams.getAll('roles')).toEqual(['awp', 'support']);
+    expect(first.searchParams.get('hasMic')).toBe('false'); expect(first.searchParams.get('limit')).toBe('20');
+    expect(first.searchParams.has('cursor')).toBe(false); expect(next.searchParams.get('cursor')).toBe('opaque-next');
+    for (const [url, options] of send.mock.calls.slice(1)) {
+      expect(options?.method).toBe('GET'); expect(options?.body).toBeUndefined();
+      expect(options?.headers).toMatchObject({ Authorization: `Bearer ${authPayload.token}` });
+      expect(String(url)).not.toContain(authPayload.token);
+    }
+  });
+
+  it('rejects feed responses with forbidden private data or unknown card fields', async () => {
+    const send = vi.fn<typeof fetch>().mockResolvedValueOnce(response(authPayload))
+      .mockResolvedValueOnce(response({ items: [{ ...publicProfileFixture, username: 'private_contact' }], nextCursor: null }));
+    const client = new SquadApi('', send, () => now); await client.authenticate('signed-telegram-data');
+    await expect(client.feed(defaultFeedFilters())).rejects.toMatchObject({ code: 'INVALID_RESPONSE' });
+  });
+
+  it('preserves the feed eligibility checklist without exposing the server message', async () => {
+    const requirements = [{ code: 'ONBOARDING_INCOMPLETE' }, { code: 'STEAM_REQUIRED' }, { code: 'PUBLISHED_PROFILE_REQUIRED' }];
+    const send = vi.fn<typeof fetch>().mockResolvedValueOnce(response(authPayload))
+      .mockResolvedValueOnce(response({ error: { code: 'FEED_REQUIREMENTS_MISSING', requirements, message: 'do not display server text' } }, 409));
+    const client = new SquadApi('', send, () => now); await client.authenticate('signed-telegram-data');
+    await expect(client.feed(defaultFeedFilters())).rejects.toMatchObject({ code: 'FEED_REQUIREMENTS_MISSING', requirements, message: 'FEED_REQUIREMENTS_MISSING' });
+  });
+
+  it('passes cancellation through and never turns a canceled page into a visible network error', async () => {
+    const send = vi.fn<typeof fetch>().mockResolvedValueOnce(response(authPayload)).mockImplementationOnce((_url, init) => new Promise((_resolve, reject) => {
+      init?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true });
+    }));
+    const client = new SquadApi('', send, () => now); await client.authenticate('signed-telegram-data');
+    const controller = new AbortController(); const pending = client.feed(defaultFeedFilters(), null, controller.signal); controller.abort();
+    await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
+  });
+});
 
 describe('profile API and account deletion client', () => {
   it('reads and saves own profiles, publishes and fetches the exact public preview using bearer-only authorization', async () => {

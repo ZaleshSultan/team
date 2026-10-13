@@ -15,7 +15,7 @@
     "headline": "Find your people.",
     "headlineAccent": "Play as a team.",
     "description": "Teammates who share your goals, language and playing rhythm. Start by verifying your account.",
-    "comingSoon": "Gaming profile editing and teammate search will arrive later."
+    "comingSoon": "Complete your profile and find players who share your goals."
   },
   "auth": {
     "loading": "Connecting your account",
@@ -177,7 +177,7 @@
     "publishTitle": "Ready to publish",
     "publishDescription": "We check your account and saved profile before publishing. Statistics and a public Steam library are optional.",
     "publishToggle": "Publish profile",
-    "futureDiscovery": "Your profile is published. Player search arrives in the next milestone.",
+    "futureDiscovery": "Your profile is published. Other players can now find you.",
     "requiredFields": "Complete or fix: {{fields}}",
     "privacyTitle": "Privacy",
     "shareActivity": "Show my CS2 playtime",
@@ -223,18 +223,77 @@
       "PROFILE_INVALID": "Update and save your profile to meet the community rules."
     },
     "requirements": {
-      "ONBOARDING_INCOMPLETE": { "missing": "Confirm your age, rules and Telegram username in step one.", "complete": "Age, rules and Telegram username confirmed" },
-      "STEAM_REQUIRED": { "missing": "Connect Steam in step two.", "complete": "Steam connected" },
-      "PROFILE_INCOMPLETE": { "missing": "Complete the required fields and save your profile.", "complete": "Required fields saved" },
-      "PROFILE_INVALID": { "missing": "Fix the profile fields and save your changes.", "complete": "Profile meets the rules" },
-      "USER_BANNED": { "missing": "This account is banned and cannot publish.", "complete": "Account can publish a profile" }
+      "ONBOARDING_INCOMPLETE": {
+        "missing": "Confirm your age, rules and Telegram username in step one.",
+        "complete": "Age, rules and Telegram username confirmed"
+      },
+      "STEAM_REQUIRED": {
+        "missing": "Connect Steam in step two.",
+        "complete": "Steam connected"
+      },
+      "PROFILE_INCOMPLETE": {
+        "missing": "Complete the required fields and save your profile.",
+        "complete": "Required fields saved"
+      },
+      "PROFILE_INVALID": {
+        "missing": "Fix the profile fields and save your changes.",
+        "complete": "Profile meets the rules"
+      },
+      "USER_BANNED": {
+        "missing": "This account is banned and cannot publish.",
+        "complete": "Account can publish a profile"
+      }
     },
     "options": {
-      "roles": { "entry": "Entry", "awp": "AWP", "support": "Support", "lurk": "Lurker", "igl": "Captain / IGL" },
-      "lookingFor": { "duo": "Duo", "five_stack": "Five-stack", "team": "Team" },
-      "playTimes": { "morning": "Morning", "day": "Day", "evening": "Evening", "night": "Night" },
-      "languages": { "ru": "Русский", "kk": "Қазақша", "en": "English", "de": "Deutsch", "fr": "Français", "es": "Español", "it": "Italiano", "pt": "Português", "tr": "Türkçe", "uk": "Українська", "pl": "Polski", "uz": "O‘zbekcha", "ky": "Кыргызча", "tg": "Тоҷикӣ", "az": "Azərbaycanca", "hy": "Հայերեն", "ka": "ქართული", "be": "Беларуская", "zh": "中文", "ko": "한국어", "ja": "日本語", "ar": "العربية" },
-      "regions": { "KZ": "Kazakhstan", "RU": "Russia", "CIS": "CIS", "EU": "Europe", "OTHER": "Other region" }
+      "roles": {
+        "entry": "Entry",
+        "awp": "AWP",
+        "support": "Support",
+        "lurk": "Lurker",
+        "igl": "Captain / IGL"
+      },
+      "lookingFor": {
+        "duo": "Duo",
+        "five_stack": "Five-stack",
+        "team": "Team"
+      },
+      "playTimes": {
+        "morning": "Morning",
+        "day": "Day",
+        "evening": "Evening",
+        "night": "Night"
+      },
+      "languages": {
+        "ru": "Русский",
+        "kk": "Қазақша",
+        "en": "English",
+        "de": "Deutsch",
+        "fr": "Français",
+        "es": "Español",
+        "it": "Italiano",
+        "pt": "Português",
+        "tr": "Türkçe",
+        "uk": "Українська",
+        "pl": "Polski",
+        "uz": "O‘zbekcha",
+        "ky": "Кыргызча",
+        "tg": "Тоҷикӣ",
+        "az": "Azərbaycanca",
+        "hy": "Հայերեն",
+        "ka": "ქართული",
+        "be": "Беларуская",
+        "zh": "中文",
+        "ko": "한국어",
+        "ja": "日本語",
+        "ar": "العربية"
+      },
+      "regions": {
+        "KZ": "Kazakhstan",
+        "RU": "Russia",
+        "CIS": "CIS",
+        "EU": "Europe",
+        "OTHER": "Other region"
+      }
     }
   },
   "errors": {
@@ -289,5 +348,71 @@
     "TELEGRAM_AUTH_EXPIRED": "Your Telegram data expired. Close the Mini App and reopen it through the bot.",
     "FORBIDDEN": "This action is not available for the current account.",
     "NOT_FOUND": "The data is no longer available. Please try again."
+  },
+  "feed": {
+    "navigation": "App sections",
+    "profileTab": "Profile",
+    "feedTab": "Feed",
+    "eyebrow": "CS2 / FIND YOUR TEAM",
+    "title": "Find your people.",
+    "description": "Players who share your goals, language and schedule. Only published profiles appear here.",
+    "filters": "Filters",
+    "filterSemantics": "Any option within a group · all selected groups together",
+    "activeFilters": "Active filters",
+    "reset": "Reset",
+    "apply": "Show players",
+    "regions": "Regions",
+    "faceitLevel": "FACEIT level",
+    "minimum": "From",
+    "maximum": "To",
+    "anyLevel": "Any",
+    "invalidRange": "The minimum level cannot be higher than the maximum.",
+    "faceitRangeSummary": "FACEIT {{min}}–{{max}}",
+    "eloValue": "{{value}} ELO",
+    "mic": {
+      "any": "Any",
+      "yes": "With a microphone",
+      "no": "Without a microphone"
+    },
+    "micYes": "With a microphone",
+    "micNo": "Without a microphone",
+    "verifiedOnly": "FACEIT verified",
+    "verifiedHint": "The Steam account on FACEIT matches the linked account.",
+    "noBans": "No VAC or game bans",
+    "noBansHint": "Hides known VAC and game bans. Players with unavailable ban data remain in the results.",
+    "includeBans": "Include players with bans",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing…",
+    "pullRefresh": "Pull down at the top of the page to refresh",
+    "releaseRefresh": "Release to refresh",
+    "loading": "Loading players…",
+    "loadMore": "Load more",
+    "loadingMore": "Loading more…",
+    "end": "You have seen all matching profiles.",
+    "emptyTitle": "No players found yet",
+    "emptyFiltered": "Try resetting the filters to see more players.",
+    "emptyDefault": "There are no matching published profiles yet. Check back later or refresh the list.",
+    "errorTitle": "Could not load players",
+    "requirementsTitle": "Get your profile ready",
+    "requirementsDescription": "A few steps remain. Go to your profile to complete them.",
+    "completeProfile": "Go to profile",
+    "requirements": {
+      "ONBOARDING_INCOMPLETE": "Confirm your age and the community rules, and set a Telegram username.",
+      "STEAM_REQUIRED": "Connect your Steam account.",
+      "PUBLISHED_PROFILE_REQUIRED": "Complete and publish your CS2 profile."
+    },
+    "banWarning": "Steam bans or restrictions reported",
+    "banUnknown": "Steam ban and restriction data is unavailable",
+    "leaveProfile": "Your profile has unsaved changes. Go to players and discard them?",
+    "errors": {
+      "FEED_REQUIREMENTS_MISSING": "Complete your profile setup to open player search.",
+      "FEED_INVALID_FILTERS": "These filters are unavailable. Reset them and try again.",
+      "INVALID_CURSOR": "The list has changed. Refresh it to continue.",
+      "FEED_INVALID_CURSOR": "The list has changed. Refresh it to continue.",
+      "GAME_UNAVAILABLE": "Player search is temporarily unavailable. Try again later."
+    },
+    "cardRoles": "Roles",
+    "cardPlayTimes": "Play times",
+    "cardLookingFor": "Looking for"
   }
 }

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { normalizeProfileText, profileTextError, type AuthUser, type ProfileField, type ProfileOptions, type ProfileResponse, type PublicPlayerCard, type PublishRequirement } from '@squad/shared';
+import { normalizeProfileText, profileTextError, publishRequirementSchema, type AuthUser, type ProfileField, type ProfileOptions, type ProfileResponse, type PublicPlayerCard, type PublishRequirement } from '@squad/shared';
 import { api, ApiError, errorCode } from './api.js';
 import { getTelegramWebApp } from './telegram.js';
 import { confirmAccountDeletion, createProfileDraft, installUnsavedChangesGuard, profileDraftChanged, toggleProfileChoice, validateProfileDraft, type ProfileDraft, type ProfileErrors } from './profile.js';
@@ -52,7 +52,12 @@ export function ProfileScreen({ onAuthError, onPrivacyChanged, onDirtyChange }: 
     if (cause instanceof ApiError) {
       if (cause.issues) setErrors(Object.fromEntries(cause.issues.map((issue) => [issue.field, issue.code])));
       else if (cause.field) setErrors({ [cause.field]: cause.code });
-      if (cause.requirements) setData((current) => current ? { ...current, requirements: cause.requirements! } : current);
+      if (cause.requirements) {
+        const requirements = cause.requirements.flatMap((requirement) => {
+          const parsed = publishRequirementSchema.safeParse(requirement); return parsed.success ? [parsed.data] : [];
+        });
+        setData((current) => current ? { ...current, requirements } : current);
+      }
     }
   }
 

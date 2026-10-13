@@ -1,9 +1,11 @@
 import { z } from 'zod';
 import { profileFieldSchema, profileValidationIssueSchema, publishRequirementSchema } from './profile.js';
+import { feedRequirementSchema } from './feed.js';
 export * from './auth.js';
 export * from './providers.js';
 export * from './stats.js';
 export * from './profile.js';
+export * from './feed.js';
 
 export const languageSchema = z.enum(['ru', 'en']);
 export type Language = z.infer<typeof languageSchema>;
@@ -12,7 +14,7 @@ export const lookingForSchema = z.enum(['duo', 'five_stack', 'team']);
 export const playTimeSchema = z.enum(['morning', 'day', 'evening', 'night']);
 export const apiErrorSchema = z.object({
   error: z.object({ code: z.string(), message: z.string().optional(), requestId: z.string().optional(),
-    field: profileFieldSchema.optional(), issues: z.array(profileValidationIssueSchema).optional(), requirements: z.array(publishRequirementSchema).optional() }),
+    field: profileFieldSchema.optional(), issues: z.array(profileValidationIssueSchema).optional(), requirements: z.array(z.union([publishRequirementSchema, feedRequirementSchema])).optional() }),
 });
 export const healthResponseSchema = z.object({ status: z.literal('ok') });
 export type ApiErrorResponse = z.infer<typeof apiErrorSchema>;

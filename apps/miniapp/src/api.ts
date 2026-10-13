@@ -12,17 +12,21 @@ import {
   publicPlayerCardSchema,
   privacyInputSchema,
   deleteAccountInputSchema,
+  feedResponseSchema,
+  type FeedFilters,
+  type FeedRequirement,
   type ProfileUpdateInput,
   type PublishRequirement,
   type AuthResponse,
 } from '@squad/shared';
+import { feedSearchParams } from './feed.js';
 
 interface ResponseSchema<T> {
   parse(value: unknown): T;
 }
 
 export class ApiError extends Error {
-  constructor(public readonly code: string, public readonly field?: string, public readonly requirements?: PublishRequirement[], public readonly issues?: { code: string; field: string }[]) {
+  constructor(public readonly code: string, public readonly field?: string, public readonly requirements?: (PublishRequirement | FeedRequirement)[], public readonly issues?: { code: string; field: string }[]) {
     super(code);
     this.name = 'ApiError';
   }
@@ -112,6 +116,10 @@ export class SquadApi {
     return this.request('/api/me/profile/cs2/preview', publicPlayerCardSchema, undefined, true, signal);
   }
 
+  feed(filters: FeedFilters, cursor?: string | null, signal?: AbortSignal) {
+    return this.request(`/api/feed/cs2?${feedSearchParams(filters, cursor)}`, feedResponseSchema, undefined, true, signal);
+  }
+
   changePrivacy(shareSteamActivity: boolean, signal?: AbortSignal) {
     return this.request('/api/me/privacy', meResponseSchema, privacyInputSchema.parse({ shareSteamActivity }), true, signal, 'PATCH');
   }
@@ -167,7 +175,7 @@ export class SquadApi {
         if (response.status === 401 && authenticated) forgetRejectedSession();
         let code = response.status === 401 ? 'SESSION_EXPIRED' : 'REQUEST_FAILED';
         let field: string | undefined;
-        let requirements: PublishRequirement[] | undefined;
+        let requirements: (PublishRequirement | FeedRequirement)[] | undefined;
         let issues: { code: string; field: string }[] | undefined;
         try {
           const parsed = apiErrorSchema.safeParse(await response.json());

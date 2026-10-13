@@ -1,6 +1,6 @@
 # Squad — Telegram CS2 teammates
 
-TypeScript MVP built in reviewable milestones. **M1–M4 are implemented; stopped for review.** Telegram authentication, consent, external Steam linking and cached Steam/FACEIT stats are followed by the CS2 profile editor, publication checklist and privacy-safe preview. Search, requests and moderation remain M5–M7. See [M4 profiles and privacy](docs/profile.md), [M3 stats and operations](docs/stats.md) and [API mapping verification limits](docs/api-mappings.md).
+TypeScript MVP built in reviewable milestones. **M1–M5 are implemented; stopped for review.** Telegram authentication, consent, external Steam linking, cached Steam/FACEIT stats and the CS2 profile editor are followed by a privacy-safe player feed with filters and cursor pagination. Requests/contact exchange and moderation remain M6–M7. See [M5 feed, performance and safe test data](docs/feed.md), [M4 profiles and privacy](docs/profile.md), [M3 stats and operations](docs/stats.md) and [API mapping verification limits](docs/api-mappings.md).
 
 ## Requirements
 
@@ -68,7 +68,9 @@ packages/shared Zod schemas and API types shared by clients and server
 docs/          Database and authentication design notes
 ```
 
-Game logic belongs behind `GameProvider`, not inside generic search/request code. All user-facing strings live in translation files. `user_games` caches **all accessible owned games**, including titles outside the catalog; search remains a future CS2-only feature. Clusters are schema-only.
+Game logic belongs behind `GameProvider`, not inside generic search/request code. All user-facing strings live in translation files. `user_games` caches **all accessible owned games**, including titles outside the catalog; the M5 feed searches CS2 profiles only. Clusters are schema-only.
+
+`GET /api/feed/cs2` requires current onboarding consent, linked Steam and, by default, a published CS2 profile. `FEED_REQUIRES_PUBLISHED_PROFILE=true` and `FEED_RATE_LIMIT_PER_MINUTE=60` are the defaults. The Mini App provides Profile/Feed navigation, remembered filters, load more, refresh and requirement guidance. No contact or request actions are rendered yet. Synthetic seed, cleanup and benchmark commands require explicit opt-in, a local disposable database and a development/test environment; they never load `.env`. See [feed tooling and measurements](docs/feed.md#synthetic-data-and-benchmark-safety) before running them. Leave `ALLOW_SYNTHETIC_SEED=0` on real installations.
 
 ## Keys and privacy
 
@@ -119,6 +121,6 @@ Automated provider responses are injected for repeatable tests. Live Telegram/St
 - M2: Telegram login, onboarding consent/username, external-browser Steam OpenID and polling.
 - M3: Steam/FACEIT cached sync, all owned games, six-hour refresh.
 - M4: CS2 profile editor, publication checklist, badges, privacy-safe preview and account deletion UI.
-- M5: feed, filters and cursor pagination.
+- M5: implemented — CS2 feed, provider-validated filters, signed cursor pagination, privacy-safe cards and guarded performance tooling.
 - M6: requests, ten daily outgoing requests, queued notifications/contact exchange.
 - M7: reports/blocks, bot admin commands, moderation and final validation.
