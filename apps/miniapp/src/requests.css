@@ -1,0 +1,38 @@
+.requests-screen { padding: 16px 0 28px; min-width: 0; }
+.squad-navigation { flex-wrap: wrap; }
+.squad-navigation .request-nav-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 21px; padding: 2px 5px; margin-left: 7px; border: 1px solid currentColor; border-radius: 20px; font-size: 10px; line-height: 1.3; }
+.request-tabs { display: flex; gap: 8px; margin: 22px 0 19px; border-bottom: 1px solid var(--border); }
+.request-tabs button { flex: 1; min-height: 46px; padding: 12px 10px; border: 0; border-bottom: 3px solid transparent; color: var(--muted); background: transparent; font-size: 12px; font-weight: 700; }
+.request-tabs button[aria-selected='true'] { border-bottom-color: var(--accent); color: var(--text); }
+.request-card-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 11px; margin-top: 20px; padding-top: 17px; border-top: 1px solid var(--border); }
+.request-card-actions > .request-message-form, .request-card-actions > .request-error, .request-card-actions > .request-success, .request-card-actions > .request-contact { flex-basis: 100%; }
+.request-action-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.request-block-button { margin-left: auto; min-height: 44px; }
+.request-message-form { min-width: 0; }
+.request-message-form .profile-field textarea { min-height: 76px; }
+.request-message-meta { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin: 7px 0 13px; color: var(--muted); font-size: 10px; line-height: 1.7; }
+.request-message-meta p { margin: 0; }
+.request-message-meta span { flex-shrink: 0; }
+.request-error { margin: 0; color: var(--error); font-size: 12px; line-height: 1.7; }
+.request-error-detail { display: block; margin-top: 5px; }
+.request-success { margin: 0; color: var(--accent); font-size: 13px; font-weight: 700; }
+.request-card-note { margin: 11px 0 0; color: var(--muted); font-size: 11px; line-height: 1.8; }
+.request-contact .request-card-note { margin: 0 0 12px; }
+.request-contact .text-button { margin-left: 13px; min-height: 44px; }
+.request-contact .request-error { margin-top: 12px; }
+.request-contact-username { font-size: 13px; overflow-wrap: anywhere; margin: 0 0 12px; }
+.request-details { margin-top: 20px; border-top: 1px solid var(--border); padding-top: 17px; }
+.request-details .request-card-actions { margin-top: 14px; border-top: 0; padding-top: 0; }
+.request-status-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.request-status { border: 1px solid var(--border); border-radius: 6px; padding: 6px 9px; font-size: 11px; color: var(--muted); }
+.request-status-pending, .request-status-accepted { color: var(--text); }
+.request-status-accepted { border-color: var(--accent); }
+.request-status-row time { color: var(--muted); font-size: 10px; }
+.request-message { border-left: 2px solid var(--accent); margin: 17px 0 0; padding: 0 0 0 12px; color: var(--text); font-size: 12px; line-height: 1.8; white-space: pre-wrap; overflow-wrap: anywhere; }
+.request-dialog-overlay { position: fixed; inset: 0; z-index: 30; background: #0009; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.request-dialog { width: min(100%, 430px); max-height: calc(100dvh - 40px); overflow-y: auto; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 15px; padding: 24px; outline: none; }
+.request-dialog h2 { font-size: 21px; line-height: 1.5; margin: 0 0 13px; overflow-wrap: anywhere; }
+.request-dialog p { color: var(--muted); font-size: 12px; line-height: 1.8; }
+.request-dialog .request-error { color: var(--error); }
+.request-dialog-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 22px; }
+@media (max-width: 400px) { .squad-navigation { gap: 6px; }.squad-navigation button { min-width: 0; flex: 1; padding: 11px 10px; font-size: 12px; }.request-dialog { padding: 20px; }.request-dialog-actions { flex-wrap: wrap; } }

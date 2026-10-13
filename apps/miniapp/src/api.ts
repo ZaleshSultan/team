@@ -13,6 +13,12 @@ import {
   privacyInputSchema,
   deleteAccountInputSchema,
   feedResponseSchema,
+  sendRequestInputSchema,
+  requestListResponseSchema,
+  requestResponseSchema,
+  requestSummaryResponseSchema,
+  blockResponseSchema,
+  type SendRequestInput,
   type FeedFilters,
   type FeedRequirement,
   type ProfileUpdateInput,
@@ -26,7 +32,7 @@ interface ResponseSchema<T> {
 }
 
 export class ApiError extends Error {
-  constructor(public readonly code: string, public readonly field?: string, public readonly requirements?: (PublishRequirement | FeedRequirement)[], public readonly issues?: { code: string; field: string }[]) {
+  constructor(public readonly code: string, public readonly field?: string, public readonly requirements?: (PublishRequirement | FeedRequirement)[], public readonly issues?: { code: string; field: string }[], public readonly resetAt?: string) {
     super(code);
     this.name = 'ApiError';
   }
@@ -120,6 +126,36 @@ export class SquadApi {
     return this.request(`/api/feed/cs2?${feedSearchParams(filters, cursor)}`, feedResponseSchema, undefined, true, signal);
   }
 
+  sendRequest(input: SendRequestInput, signal?: AbortSignal) {
+    return this.request('/api/requests', requestResponseSchema, sendRequestInputSchema.parse(input), true, signal);
+  }
+
+  requests(direction: 'incoming' | 'outgoing', cursor?: string | null, signal?: AbortSignal) {
+    const query = new URLSearchParams({ limit: '20' });
+    if (cursor) query.set('cursor', cursor);
+    return this.request(`/api/requests/${direction}?${query}`, requestListResponseSchema, undefined, true, signal);
+  }
+
+  requestSummary(signal?: AbortSignal) {
+    return this.request('/api/requests/summary', requestSummaryResponseSchema, undefined, true, signal);
+  }
+
+  requestContact(id: string, signal?: AbortSignal) {
+    return this.request(`/api/requests/${encodeURIComponent(id)}`, requestResponseSchema, undefined, true, signal);
+  }
+
+  resolveRequest(id: string, action: 'accept' | 'decline' | 'cancel', signal?: AbortSignal) {
+    return this.request(`/api/requests/${encodeURIComponent(id)}/${action}`, requestResponseSchema, {}, true, signal);
+  }
+
+  blockProfile(profileId: string, signal?: AbortSignal) {
+    return this.request(`/api/blocks/${encodeURIComponent(profileId)}`, blockResponseSchema, {}, true, signal);
+  }
+
+  unblockProfile(profileId: string, signal?: AbortSignal) {
+    return this.request(`/api/blocks/${encodeURIComponent(profileId)}`, blockResponseSchema, undefined, true, signal, 'DELETE');
+  }
+
   changePrivacy(shareSteamActivity: boolean, signal?: AbortSignal) {
     return this.request('/api/me/privacy', meResponseSchema, privacyInputSchema.parse({ shareSteamActivity }), true, signal, 'PATCH');
   }
@@ -178,6 +214,7 @@ export class SquadApi {
         let field: string | undefined;
         let requirements: (PublishRequirement | FeedRequirement)[] | undefined;
         let issues: { code: string; field: string }[] | undefined;
+        let resetAt: string | undefined;
         try {
           const parsed = apiErrorSchema.safeParse(await response.json());
           if (parsed.success) {
@@ -185,13 +222,14 @@ export class SquadApi {
             field = parsed.data.error.field;
             requirements = parsed.data.error.requirements;
             issues = parsed.data.error.issues;
+            resetAt = parsed.data.error.resetAt;
           }
         } catch (error) {
           if (controller.signal.aborted) throw error;
           // A proxy may return an HTML error page.
         }
         if (code === 'USER_BANNED' && authenticated) forgetRejectedSession();
-        throw new ApiError(code, field, requirements, issues);
+        throw new ApiError(code, field, requirements, issues, resetAt);
       }
       try {
         return schema.parse(response.status === 204 ? undefined : await response.json());

@@ -1,10 +1,10 @@
 # Squad — Telegram CS2 teammates
 
-TypeScript MVP built in reviewable milestones. **M1–M5 are implemented; stopped for review.** Telegram authentication, consent, external Steam linking, cached Steam/FACEIT stats and the CS2 profile editor are followed by a privacy-safe player feed with filters and cursor pagination. Requests/contact exchange and moderation remain M6–M7. See [M5 feed, performance and safe test data](docs/feed.md), [M4 profiles and privacy](docs/profile.md), [M3 stats and operations](docs/stats.md) and [API mapping verification limits](docs/api-mappings.md).
+TypeScript MVP built in reviewable milestones. **M1–M6 are implemented; stopped for review.** Telegram authentication, consent, external Steam linking, cached Steam/FACEIT stats and the CS2 profile editor are followed by a player feed, teammate requests, bot notifications and accepted-request contact exchange. Moderation remains M7. See [M6 requests and contacts](docs/requests.md), [notification operations](docs/notifications.md), [M5 feed and performance](docs/feed.md), [M4 profiles and privacy](docs/profile.md), [M3 stats and operations](docs/stats.md) and [API mapping verification limits](docs/api-mappings.md).
 
 ## Requirements
 
-- Node.js 22.12+ and pnpm 10 (`corepack enable` or install pnpm separately).
+- Node.js 22.13+ and pnpm 10 (`corepack enable` or install pnpm separately). ESLint 10 is development tooling; the Docker images use the current Node 22 release.
 - Docker Desktop / Docker Engine with Compose running.
 - A development Telegram bot from [BotFather](https://t.me/BotFather).
 - For Telegram: an HTTPS Cloudflare Tunnel or ngrok URL pointing to Vite port 5173. Vite forwards `/api` to Fastify port 3000.
@@ -35,6 +35,7 @@ cloudflared tunnel --url http://localhost:5173
 Copy the assigned HTTPS origin into the URL variables, set its hostname in `DEV_TUNNEL_HOST`, and restart development processes. Vite forwards `/api` and `/health` to Fastify; never tunnel port 3000 as the Mini App frontend. In BotFather create a dedicated test bot and configure the Mini App/menu URL. Send `/start` in the bot's private chat; it also installs the chat menu button.
 
 ```sh
+pnpm lint
 pnpm typecheck
 pnpm test
 pnpm build
@@ -62,7 +63,7 @@ In bash, use `export TEST_DATABASE_URL='...'`, `DATABASE_URL="$TEST_DATABASE_URL
 
 ```text
 apps/api       Fastify, validated config, Prisma schema/migrations
-apps/bot       grammY launcher; moderation and notifications in later milestones
+apps/bot       grammY launcher and BullMQ notification worker; moderation in M7
 apps/miniapp   React/Vite, Russian default and English translations
 packages/shared Zod schemas and API types shared by clients and server
 docs/          Database and authentication design notes
@@ -70,13 +71,17 @@ docs/          Database and authentication design notes
 
 Game logic belongs behind `GameProvider`, not inside generic search/request code. All user-facing strings live in translation files. `user_games` caches **all accessible owned games**, including titles outside the catalog; the M5 feed searches CS2 profiles only. Clusters are schema-only.
 
-`GET /api/feed/cs2` requires current onboarding consent, linked Steam and, by default, a published CS2 profile. `FEED_REQUIRES_PUBLISHED_PROFILE=true` and `FEED_RATE_LIMIT_PER_MINUTE=60` are the defaults. The Mini App provides Profile/Feed navigation, remembered filters, load more, refresh and requirement guidance. No contact or request actions are rendered yet. Synthetic seed, cleanup and benchmark commands require explicit opt-in, a local disposable database and a development/test environment; they never load `.env`. See [feed tooling and measurements](docs/feed.md#synthetic-data-and-benchmark-safety) before running them. Leave `ALLOW_SYNTHETIC_SEED=0` on real installations.
+`GET /api/feed/cs2` requires current onboarding consent, linked Steam and, by default, a published CS2 profile. `FEED_REQUIRES_PUBLISHED_PROFILE=true` and `FEED_RATE_LIMIT_PER_MINUTE=60` are the defaults. The Mini App provides Profile/Feed/Requests navigation, remembered filters, invitations, an incoming badge and paginated incoming/outgoing requests. Synthetic seed, cleanup and benchmark commands require explicit opt-in, a local disposable database and a development/test environment; they never load `.env`. See [feed tooling and measurements](docs/feed.md#synthetic-data-and-benchmark-safety) before running them. Leave `ALLOW_SYNTHETIC_SEED=0` on real installations.
+
+M6 defaults: `REQUESTS_PER_DAY=10` in a rolling 24-hour window, `REQUEST_TTL_DAYS=7`, `REQUESTS_RATE_LIMIT_PER_MINUTE=60`, `NOTIFICATION_CONCURRENCY=3`, `NOTIFICATION_RATE_LIMIT_PER_SECOND=25`, `NOTIFICATION_MAX_ATTEMPTS=5`, `NOTIFICATION_BACKOFF_MS=1000`, and `TELEGRAM_CONTACT_TIMEOUT_MS=5000`. The bot now also needs `DATABASE_URL` and `REDIS_URL`; Compose supplies its internal service addresses. The API's maintenance worker expires requests and dispatches a durable database outbox to BullMQ's `notifications` queue; the bot process delivers messages. See [request deployment instructions](docs/requests.md#deployment).
 
 ## Keys and privacy
 
 Steam OpenID verifies identity and needs no Steam API key. `STEAM_WEB_API_KEY` and `FACEIT_API_KEY` enable their respective cached stats providers, sourced from [Steam](https://steamcommunity.com/dev/apikey) and [FACEIT developers](https://developers.faceit.com/). Missing keys disable only that provider; the app shows stats unavailable. No Steam/FACEIT passwords or session tokens are accepted or stored. Onboarding requires a Telegram username, age confirmation (default 18, configurable), and community rules consent; no birth date is stored. The age threshold is a product setting, not a claim about jurisdiction-specific age eligibility.
 
 `share_steam_activity` defaults to false. The strict public player card always omits account identifiers and the library; exact CS2 hours appear only when sharing is enabled. The owner can always inspect their cache. Session/start-link/state/browser secrets are stored only as hashes; session tokens stay in client memory. Health responses expose no credentials. API logs exclude authorization and URLs, including provider URLs with Steam keys. [Authentication and external Steam flow](docs/authentication.md) describes the protocol, endpoints, state transitions, and test boundaries.
+
+Request lists and new-request notifications contain public card data and no Telegram username/ID. Acceptance re-checks both current usernames with Telegram `getChat`; an unavailable contact leaves the request pending. Only the two participants can obtain the other participant's current username, only on an accepted request, with another live check each time. Usernames are never stored in request/outbox records or Redis jobs, and blocks revoke access to accepted contacts. Declining sends no notification. See [contact visibility and limitations](docs/requests.md#contact-visibility).
 
 ## Deployment approach
 
@@ -124,5 +129,5 @@ Automated provider responses are injected for repeatable tests. Live Telegram/St
 - M3: Steam/FACEIT cached sync, all owned games, six-hour refresh.
 - M4: CS2 profile editor, publication checklist, badges, privacy-safe preview and account deletion UI.
 - M5: implemented — CS2 feed, provider-validated filters, signed cursor pagination, privacy-safe cards and guarded performance tooling.
-- M6: requests, ten daily outgoing requests, queued notifications/contact exchange.
+- M6: implemented — teammate requests, rolling daily quota, expiry, queued notifications, fresh accepted contacts, minimal blocks and requests UI.
 - M7: reports/blocks, bot admin commands, moderation and final validation.

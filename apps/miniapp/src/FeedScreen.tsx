@@ -1,14 +1,15 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { feedRequirementSchema, type FeedFilters, type FeedRequirement, type ProfileOptions, type PublicPlayerCard } from '@squad/shared';
 import { api, ApiError, errorCode } from './api.js';
 import { activeFeedFilterCount, applyFeedPage, defaultFeedFilters, feedChoiceFields, isPullToRefresh, readFeedFilters, rememberFeedFilters, toggleFeedChoice, type FeedChoiceField, type FeedPageState } from './feed.js';
 import './feed.css';
+import { FeedRequestActions } from './RequestActions.js';
 
 const authErrors = ['SESSION_EXPIRED', 'SESSION_INVALID', 'UNAUTHORIZED', 'USER_BANNED'];
 type Pending = 'initial' | 'refresh' | 'more' | null;
 
-export function FeedScreen({ onProfile, onAuthError }: { onProfile(): void; onAuthError(error: unknown): void }) {
+export function FeedScreen({ onProfile, onAuthError, onRequests, onChanged }: { onProfile(): void; onAuthError(error: unknown): void; onRequests(): void; onChanged(): void }) {
   const { t } = useTranslation();
   const [options, setOptions] = useState<ProfileOptions | null>(null);
   const [filters, setFilters] = useState<FeedFilters>(defaultFeedFilters);
@@ -100,14 +101,17 @@ export function FeedScreen({ onProfile, onAuthError }: { onProfile(): void; onAu
       <p>{t('feed.filterSemantics')}</p></div>
     <FeedFilterSummary filters={filters} onReset={reset} />
     <p className="feed-pull-hint" role="status">{t(pulling ? 'feed.releaseRefresh' : 'feed.pullRefresh')}</p>
-    <FeedResults page={page} pending={pending} error={error} requirements={requirements} hasFilters={count > 0} onRetry={retry} onReset={reset} onProfile={onProfile} onMore={() => { void load(filters, true); }} />
+    <FeedResults page={page} pending={pending} error={error} requirements={requirements} hasFilters={count > 0} onRetry={retry} onReset={reset} onProfile={onProfile} onMore={() => { void load(filters, true); }}
+      actions={(card) => <FeedRequestActions player={card} onProfile={onProfile} onAuthError={onAuthError} onRequests={onRequests} onChanged={onChanged}
+        onBlocked={(profileId) => setPage((current) => ({ ...current, items: current.items.filter((item) => item.id !== profileId) }))} />} />
     {sheet && options && <FeedFilterSheet filters={filters} options={options} onApply={apply} onCancel={() => setSheet(false)} />}
   </section>;
 }
 
-export function FeedResults({ page, pending, error, requirements, hasFilters, onRetry, onReset, onProfile, onMore }: {
+export function FeedResults({ page, pending, error, requirements, hasFilters, onRetry, onReset, onProfile, onMore, actions }: {
   page: FeedPageState; pending: Pending; error: string | null; requirements: FeedRequirement[]; hasFilters: boolean;
   onRetry(): void; onReset(): void; onProfile(): void; onMore(): void;
+  actions?(card: PublicPlayerCard): ReactNode;
 }) {
   const { t } = useTranslation();
   if (error === 'FEED_REQUIREMENTS_MISSING') return <div className="account-panel feed-state" role="status"><h2>{t('feed.requirementsTitle')}</h2><p>{t('feed.requirementsDescription')}</p>
@@ -118,7 +122,7 @@ export function FeedResults({ page, pending, error, requirements, hasFilters, on
       <p>{t(`feed.errors.${error}`, { defaultValue: t(`errors.${error}`, { defaultValue: t('errors.REQUEST_FAILED') }) })}</p>
       <button className="secondary-button" type="button" disabled={Boolean(pending)} onClick={onRetry}>{t('auth.retry')}</button>
       {hasFilters && <button className="text-button" type="button" disabled={Boolean(pending)} onClick={onReset}>{t('feed.reset')}</button>}</div>}
-    {page.items.length > 0 && <div className="feed-grid">{page.items.map((card) => <FeedPlayerCard key={card.id} card={card} />)}</div>}
+    {page.items.length > 0 && <div className="feed-grid">{page.items.map((card) => <FeedPlayerCard key={card.id} card={card} actions={actions?.(card)} />)}</div>}
     {pending && <FeedSkeleton />}
     {!pending && !error && page.items.length === 0 && <div className="account-panel feed-state"><h2>{t('feed.emptyTitle')}</h2><p>{t(hasFilters ? 'feed.emptyFiltered' : 'feed.emptyDefault')}</p>
       {hasFilters ? <button className="secondary-button" type="button" onClick={onReset}>{t('feed.reset')}</button> : <button className="secondary-button" type="button" onClick={onRetry}>{t('feed.refresh')}</button>}</div>}
@@ -132,7 +136,7 @@ export function FeedSkeleton() {
   return <div className="feed-loading" role="status"><span className="feed-visually-hidden">{t('feed.loading')}</span><div className="feed-grid" aria-hidden="true">{[0, 1, 2].map((index) => <div className="feed-card feed-skeleton" key={index}><span /><span /><span /><span /></div>)}</div></div>;
 }
 
-export function FeedPlayerCard({ card }: { card: PublicPlayerCard }) {
+export function FeedPlayerCard({ card, actions }: { card: PublicPlayerCard; actions?: ReactNode }) {
   const { t, i18n } = useTranslation();
   const hours = (value: number | null) => value === null ? t('stats.unknown') : t('stats.hours', { value: new Intl.NumberFormat(i18n.resolvedLanguage === 'en' ? 'en' : 'ru', { maximumFractionDigits: 1 }).format(value) });
   const chipList = (field: 'roles' | 'lookingFor' | 'playTimes') => <div className="feed-card-chips">{card[field].map((value) => <span className="feed-card-chip" key={value}>{t(`profile.options.${field}.${value}`, { defaultValue: value })}</span>)}</div>;
@@ -148,7 +152,7 @@ export function FeedPlayerCard({ card }: { card: PublicPlayerCard }) {
     {card.hasBans === true && <p className="feed-ban-warning">{t('feed.banWarning')}</p>}
     {card.hasBans === null && <p className="feed-card-note">{t('feed.banUnknown')}</p>}
     {card.activity && <dl className="feed-activity"><div><dt>{t('stats.cs2Total')}</dt><dd>{hours(card.activity.cs2Hours)}</dd></div><div><dt>{t('stats.cs2Recent')}</dt><dd>{hours(card.activity.cs2Hours2weeks)}</dd></div></dl>}
-    {/* M6/M7 action slot: requests, contacts and reporting intentionally render no controls in M5. */}
+    {actions}
   </article>;
 }
 

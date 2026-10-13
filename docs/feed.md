@@ -1,6 +1,6 @@
 # M5: CS2 player feed
 
-M5 implements `GET /api/feed/cs2` and the Mini App's Profile / Feed navigation. Requests, contact exchange and moderation controls remain M6/M7. Cards contain a source-code slot for future actions and render no action buttons.
+M5 implements `GET /api/feed/cs2` and the Mini App's Profile / Feed navigation. M6 extends these cards with invitations and minimal blocking, and adds a Requests screen; see [requests](requests.md). Moderation/reporting remains M7.
 
 ## Access and configuration
 
@@ -62,7 +62,7 @@ Each request rechecks that a candidate has a published profile for the provider'
 The query excludes:
 
 - Blocks in either direction.
-- `PENDING` or `ACCEPTED` teammate requests in either direction, across **all games**.
+- Unexpired `PENDING` or `ACCEPTED` teammate requests in either direction, across **all games**. Since M6, due pending rows stop excluding a player immediately, even before the expiry job updates their stored status.
 - My outgoing request with status `DECLINED` and `resolved_at >= now - 14 days`, including the exact boundary. The named constant is `DECLINED_REQUEST_COOLDOWN_DAYS`. A reverse-direction decline, an older decline, or a cancelled/expired request does not hide that candidate.
 
 There is no feed result cache. After a ban, unpublication, block or account deletion, subsequent feed requests reflect the database immediately. Already displayed cards are replaced on refresh; the UI does not receive server push events in M5. Deleting an account also cascades its blocks/requests, so surviving peers become eligible when those exclusions disappear.

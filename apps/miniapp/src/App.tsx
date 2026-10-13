@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent, type MouseEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { AuthUser } from '@squad/shared';
 import { api, errorCode } from './api.js';
@@ -9,7 +9,9 @@ import { StatsCard } from './StatsCard.js';
 import { SteamLinkProgress } from './SteamLinkProgress.js';
 import { AccountDeletionSection, ProfileScreen } from './ProfileScreen.js';
 import { FeedScreen } from './FeedScreen.js';
-import { canLeaveProfile } from './feed.js';
+import { RequestsScreen } from './RequestsScreen.js';
+import { ConfirmationDialog } from './RequestActions.js';
+import { startPendingRequestPolling } from './requests.js';
 
 type LinkAttempt = SteamLinkSnapshot & { url: string };
 type Operation = 'onboarding' | 'telegram' | 'steam' | 'logout' | null;
@@ -53,7 +55,10 @@ export function App() {
   const [rulesVersionAccepted, setRulesVersionAccepted] = useState<string | null>(null);
   const [shareSteamActivity, setShareSteamActivity] = useState(false);
   const [profileDirty, setProfileDirty] = useState(false);
-  const [screen, setScreen] = useState<'profile' | 'feed'>('profile');
+  const [screen, setScreen] = useState<'profile' | 'feed' | 'requests'>('profile');
+  const [pendingNavigation, setPendingNavigation] = useState<'feed' | 'requests' | null>(null);
+  const [pendingIncoming, setPendingIncoming] = useState(0);
+  const summaryPolling = useRef<ReturnType<typeof startPendingRequestPolling> | null>(null);
 
   useEffect(() => {
     const releaseTheme = prepareTelegram();
@@ -81,6 +86,16 @@ export function App() {
     document.title = t('app.title');
     document.documentElement.lang = i18n.resolvedLanguage ?? 'ru';
   }, [i18n.resolvedLanguage, t]);
+
+  useEffect(() => {
+    setPendingIncoming(0);
+    if (!user || user.onboarding.required || !user.username) return;
+    const polling = startPendingRequestPolling({ getSummary: (signal) => api.requestSummary(signal), onCount: setPendingIncoming, onAuthError: handleError, target: document });
+    summaryPolling.current = polling;
+    return () => { polling.stop(); if (summaryPolling.current === polling) summaryPolling.current = null; };
+    // Polling follows identity and eligibility, not every profile/cache update.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, user?.onboarding.required, Boolean(user?.username)]);
 
   useEffect(() => {
     if (!expiresAt) return;
@@ -212,9 +227,9 @@ export function App() {
     setOperation(null);
   }
 
-  function navigate(next: 'profile' | 'feed') {
+  function navigate(next: 'profile' | 'feed' | 'requests') {
     if (next === screen) return;
-    if (screen === 'profile' && !canLeaveProfile(profileDirty, () => window.confirm(t('feed.leaveProfile')))) return;
+    if (screen === 'profile' && profileDirty && next !== 'profile') { setPendingNavigation(next); return; }
     setProfileDirty(false);
     setScreen(next);
   }
@@ -262,8 +277,11 @@ export function App() {
           <nav className="squad-navigation" aria-label={t('feed.navigation')}>
             <button type="button" aria-current={screen === 'profile' ? 'page' : undefined} onClick={() => navigate('profile')}>{t('feed.profileTab')}</button>
             <button type="button" aria-current={screen === 'feed' ? 'page' : undefined} onClick={() => navigate('feed')}>{t('feed.feedTab')}</button>
+            <button type="button" aria-current={screen === 'requests' ? 'page' : undefined} onClick={() => navigate('requests')}>{t('requests.navigation')}
+              {pendingIncoming > 0 && <span className="request-nav-badge" aria-label={t('requests.pendingBadge', { count: pendingIncoming })}>{pendingIncoming > 99 ? t('requests.badgeOverflow') : pendingIncoming}</span>}</button>
           </nav>
-          {screen === 'feed' ? <FeedScreen key={`feed-${user.id}`} onProfile={() => navigate('profile')} onAuthError={handleError} /> : <div className="account-layout">
+          {screen === 'feed' ? <FeedScreen key={`feed-${user.id}`} onProfile={() => navigate('profile')} onAuthError={handleError} onRequests={() => navigate('requests')} onChanged={() => summaryPolling.current?.refresh()} /> : screen === 'requests' ?
+            <RequestsScreen key={`requests-${user.id}`} onAuthError={handleError} onChanged={() => summaryPolling.current?.refresh()} onProfile={() => navigate('profile')} /> : <div className="account-layout">
           <section className="account-panel">
             <div className="section-heading"><span className="step-label">{t('identity.step')}</span>
               <span className="badge">{t('identity.telegramVerified')}</span></div>
@@ -350,6 +368,8 @@ export function App() {
           {notice && <div className="error-notice" role="alert">{errorText(notice)}
             <button type="button" onClick={() => setNotice(null)} aria-label={t('app.dismiss')}>×</button></div>}
         </>}
+        {user && pendingNavigation && <ConfirmationDialog title={t('requests.leaveTitle')} busy={false} confirmLabel={t('requests.leaveConfirm')} onCancel={() => setPendingNavigation(null)}
+          onConfirm={() => { setProfileDirty(false); setScreen(pendingNavigation); setPendingNavigation(null); }}><p>{t('feed.leaveProfile')}</p></ConfirmationDialog>}
       </main>
       <footer><span>{t('app.footer')}</span><span>{t('app.edition')}</span></footer>
     </div>
