@@ -19,6 +19,10 @@ import { ProfileValidationError } from './games/cs2.js';
 import { PublishGateError } from './profile/errors.js';
 import { registerFeedRoutes } from './feed/routes.js';
 import { FeedAccessError } from './feed/access.js';
+import { TelegramContacts } from '@squad/shared';
+import { RequestService } from './requests/service.js';
+import { registerRequestRoutes } from './requests/routes.js';
+import { DailyRequestLimitError } from './requests/errors.js';
 
 export interface AppDependencies {
   prisma?: PrismaClient;
@@ -26,6 +30,7 @@ export interface AppDependencies {
   fetch?: typeof globalThis.fetch;
   now?: () => Date;
   stats?: StatsService;
+  requests?: RequestService;
 }
 
 export async function buildApp(config: Config, dependencies: AppDependencies = {}) {
@@ -60,6 +65,10 @@ export async function buildApp(config: Config, dependencies: AppDependencies = {
     return payload;
   });
   app.setErrorHandler((error, request, reply) => {
+    if (error instanceof DailyRequestLimitError) {
+      reply.header('Retry-After', String(Math.max(1, Math.ceil((Date.parse(error.resetAt) - (dependencies.now?.().getTime() ?? Date.now())) / 1000))));
+      return reply.code(error.statusCode).send({ error: { code: error.code, message: error.message, resetAt: error.resetAt, requestId: request.id } });
+    }
     if (error instanceof ProfileValidationError) {
       return reply.code(400).send({ error: { code: error.code, message: 'Review the highlighted profile fields',
         field: error.issues[0]?.field, issues: error.issues, requestId: request.id } });
@@ -98,5 +107,8 @@ export async function buildApp(config: Config, dependencies: AppDependencies = {
   await registerStatsRoutes(app, { config, prisma, stats, now: dependencies.now ?? (() => new Date()) });
   await registerProfileRoutes(app, { config, prisma, now: dependencies.now ?? (() => new Date()) });
   await registerFeedRoutes(app, { config, prisma, now: dependencies.now ?? (() => new Date()) });
+  const requests = dependencies.requests ?? new RequestService(prisma, config,
+    new TelegramContacts(config.BOT_TOKEN, { timeoutMs: config.TELEGRAM_CONTACT_TIMEOUT_MS, fetch: dependencies.fetch }), undefined, dependencies.now);
+  await registerRequestRoutes(app, { config, prisma, requests, now: dependencies.now ?? (() => new Date()) });
   return app;
 }

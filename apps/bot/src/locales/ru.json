@@ -1,4 +1,10 @@
 {
   "start": "SQUAD — найди своих тиммейтов в CS2.\n\nДля начала подтверди возраст и правила сообщества в Mini App, укажи имя пользователя Telegram и подключи Steam. Контакты доступны только после принятия заявки.",
-  "open": "Открыть SQUAD"
+  "open": "Открыть SQUAD",
+  "newRequest": "{nickname} зовёт тебя играть в CS2.",
+  "acceptedRequest": "{nickname} принял(а) твой запрос. Можно договориться об игре: @{username}",
+  "rolesLabel": "Роли: {roles}",
+  "faceitLabel": "FACEIT: уровень {level}",
+  "teammate": "Игрок",
+  "roles": { "entry": "Энтри", "awp": "Снайпер", "support": "Поддержка", "lurk": "Люркер", "igl": "Капитан" }
 }

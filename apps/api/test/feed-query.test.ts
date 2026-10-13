@@ -67,7 +67,8 @@ describe('parameterized feed query plan', () => {
     expect(sql.text).toContain('JOIN steam_accounts sa ON sa.user_id = u.id');
     expect(sql.text.match(/NOT EXISTS \(SELECT 1 FROM blocks/g)).toHaveLength(2);
     expect(sql.text.match(/NOT EXISTS \(SELECT 1 FROM teammate_requests/g)).toHaveLength(3);
-    expect(sql.text.match(/r.status IN \('PENDING', 'ACCEPTED'\)/g)).toHaveLength(2);
+    expect(sql.text.match(/r.status = 'ACCEPTED' OR \(r.status = 'PENDING' AND r.expires_at >/g)).toHaveLength(2);
+    expect(sql.values).toContainEqual(now);
     expect(sql.text).toContain("r.status = 'DECLINED' AND r.resolved_at >=");
     expect(sql.text).not.toContain('r.game_id');
     expect(sql.values).toContainEqual(new Date(now.getTime() - 14 * 86_400_000));

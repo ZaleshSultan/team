@@ -31,8 +31,8 @@ export function buildFeedQuery(input: FeedQueryInput): Prisma.Sql {
     Prisma.sql`u.rules_accepted_at IS NOT NULL AND u.rules_version = ${input.rulesVersion}`,
     Prisma.sql`NOT EXISTS (SELECT 1 FROM blocks b WHERE b.blocker_user_id = ${callerId}::uuid AND b.blocked_user_id = u.id)`,
     Prisma.sql`NOT EXISTS (SELECT 1 FROM blocks b WHERE b.blocker_user_id = u.id AND b.blocked_user_id = ${callerId}::uuid)`,
-    Prisma.sql`NOT EXISTS (SELECT 1 FROM teammate_requests r WHERE r.from_user_id = ${callerId}::uuid AND r.to_user_id = u.id AND r.status IN ('PENDING', 'ACCEPTED'))`,
-    Prisma.sql`NOT EXISTS (SELECT 1 FROM teammate_requests r WHERE r.from_user_id = u.id AND r.to_user_id = ${callerId}::uuid AND r.status IN ('PENDING', 'ACCEPTED'))`,
+    Prisma.sql`NOT EXISTS (SELECT 1 FROM teammate_requests r WHERE r.from_user_id = ${callerId}::uuid AND r.to_user_id = u.id AND (r.status = 'ACCEPTED' OR (r.status = 'PENDING' AND r.expires_at > ${input.now})))`,
+    Prisma.sql`NOT EXISTS (SELECT 1 FROM teammate_requests r WHERE r.from_user_id = u.id AND r.to_user_id = ${callerId}::uuid AND (r.status = 'ACCEPTED' OR (r.status = 'PENDING' AND r.expires_at > ${input.now})))`,
     Prisma.sql`NOT EXISTS (SELECT 1 FROM teammate_requests r WHERE r.from_user_id = ${callerId}::uuid AND r.to_user_id = u.id AND r.status = 'DECLINED' AND r.resolved_at >= ${declinedSince})`,
   ];
   if (position) conditions.push(Prisma.sql`(p.created_at, p.id) < (${position.createdAt}, ${position.id}::uuid)`);

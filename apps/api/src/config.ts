@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { isIP } from 'node:net';
+import { notificationSettingsSchema } from '@squad/shared';
 
 const trustedProxyEnv = z.string().default('false').transform((value, ctx): false | string[] => {
   if (value === 'false') return false;
@@ -34,6 +35,9 @@ const envSchema = z.object({
   RULES_VERSION: z.string().min(1).max(40).default('2026-10-07'),
   TRUST_PROXY: trustedProxyEnv,
   REQUESTS_PER_DAY: z.coerce.number().int().min(1).max(100).default(10),
+  REQUEST_TTL_DAYS: z.coerce.number().int().min(1).max(30).default(7),
+  REQUESTS_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(1).max(600).default(60),
+  ...notificationSettingsSchema.shape,
   FEED_REQUIRES_PUBLISHED_PROFILE: z.enum(['true', 'false']).default('true').transform((value) => value === 'true'),
   FEED_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(1).max(600).default(60),
   STATS_REFRESH_HOURS: z.coerce.number().int().min(1).max(24).default(6),

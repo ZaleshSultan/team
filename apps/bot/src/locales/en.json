@@ -1,4 +1,10 @@
 {
   "start": "SQUAD — find your CS2 teammates.\n\nStart by confirming your age and the community rules in the Mini App, setting a Telegram username and connecting Steam. Contact details are shared only after a request is accepted.",
-  "open": "Open SQUAD"
+  "open": "Open SQUAD",
+  "newRequest": "{nickname} wants to play CS2 with you.",
+  "acceptedRequest": "{nickname} accepted your request. Arrange a game: @{username}",
+  "rolesLabel": "Roles: {roles}",
+  "faceitLabel": "FACEIT: level {level}",
+  "teammate": "Player",
+  "roles": { "entry": "Entry", "awp": "AWPer", "support": "Support", "lurk": "Lurker", "igl": "IGL" }
 }
