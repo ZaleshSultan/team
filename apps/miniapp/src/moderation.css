@@ -1,0 +1,23 @@
+.moderation-section { border-top: 1px solid var(--border); margin-top: 26px; padding-top: 22px; min-width: 0; }
+.moderation-section h3 { margin: 0 0 10px; font-size: 16px; }
+.moderation-section p, .report-confirmation { color: var(--muted); font-size: 12px; line-height: 1.8; overflow-wrap: anywhere; }
+.report-button { min-height: 44px; }
+.report-form { display: grid; gap: 12px; min-width: 0; }
+.report-form .profile-field { margin: 0; }
+.report-form .profile-counter { text-align: right; }
+.report-form .checkbox-row { align-items: flex-start; }
+.report-form .checkbox-row input { flex-shrink: 0; margin-top: 5px; }
+.report-form .checkbox-row small { display: block; color: var(--muted); font-size: 10px; line-height: 1.7; margin-top: 6px; }
+.report-form .request-dialog-actions { margin-top: 6px; }
+.report-success { display: grid; gap: 12px; }
+.report-success > .primary-button { justify-self: end; }
+.blocked-heading { display: flex; justify-content: flex-end; padding: 8px 0; }
+.blocked-list { list-style: none; padding: 0; margin: 10px 0 18px; }
+.blocked-list li { display: flex; gap: 14px; align-items: center; justify-content: space-between; padding: 16px 0; border-top: 1px solid var(--border); }
+.blocked-list li > div { min-width: 0; }
+.blocked-list h4 { margin: 0; font-size: 13px; overflow-wrap: anywhere; }
+.blocked-list p { margin: 6px 0 0; }
+.blocked-list button { flex-shrink: 0; font-size: 11px; }
+.community-links { display: flex; gap: 10px; flex-wrap: wrap; }
+.community-links a { text-decoration: none; font-size: 11px; }
+@media (max-width: 400px) { .blocked-list li { align-items: flex-start; flex-wrap: wrap; }.moderation-dialog { max-height: calc(100dvh - 24px); }.community-links a { flex-grow: 1; text-align: center; } }

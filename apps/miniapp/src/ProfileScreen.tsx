@@ -291,7 +291,7 @@ export function ProfileChips({ field, options, values, error, onChange }: {
 
 export function PublishChecklist({ requirements, dirty = false }: { requirements: PublishRequirement[]; dirty?: boolean }) {
   const { t } = useTranslation();
-  const all = ['ONBOARDING_INCOMPLETE', 'STEAM_REQUIRED', 'PROFILE_INCOMPLETE', 'PROFILE_INVALID', 'USER_BANNED'] as const;
+  const all = ['ONBOARDING_INCOMPLETE', 'STEAM_REQUIRED', 'PROFILE_INCOMPLETE', 'PROFILE_INVALID', 'USER_BANNED', 'MODERATION_HIDDEN'] as const;
   return <ul className="profile-checklist">{all.map((code) => {
     const missing = requirements.find((requirement) => requirement.code === code);
     return <li key={code} data-complete={!missing}><span aria-hidden="true">{missing ? '○' : '✓'}</span><span>{t(`profile.requirements.${code}.${missing ? 'missing' : 'complete'}`)}

@@ -18,6 +18,11 @@ import {
   requestResponseSchema,
   requestSummaryResponseSchema,
   blockResponseSchema,
+  reportInputSchema,
+  reportResponseSchema,
+  blockListResponseSchema,
+  communityInfoSchema,
+  type ReportInput,
   type SendRequestInput,
   type FeedFilters,
   type FeedRequirement,
@@ -154,6 +159,20 @@ export class SquadApi {
 
   unblockProfile(profileId: string, signal?: AbortSignal) {
     return this.request(`/api/blocks/${encodeURIComponent(profileId)}`, blockResponseSchema, undefined, true, signal, 'DELETE');
+  }
+
+  report(input: ReportInput, signal?: AbortSignal) {
+    return this.request('/api/reports', reportResponseSchema, reportInputSchema.parse(input), true, signal);
+  }
+
+  blocks(cursor?: string | null, signal?: AbortSignal) {
+    const query = new URLSearchParams({ limit: '20' });
+    if (cursor) query.set('cursor', cursor);
+    return this.request(`/api/blocks?${query}`, blockListResponseSchema, undefined, true, signal);
+  }
+
+  community(signal?: AbortSignal) {
+    return this.request('/api/community', communityInfoSchema, undefined, false, signal);
   }
 
   changePrivacy(shareSteamActivity: boolean, signal?: AbortSignal) {

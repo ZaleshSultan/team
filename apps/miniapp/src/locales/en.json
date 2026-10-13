@@ -195,10 +195,10 @@
     "activityHidden": "CS2 playtime is hidden",
     "deleteTitle": "Delete account",
     "accountDeletedTitle": "Account deleted",
-    "deleteDescription": "Delete your SQUAD account and all associated data. Your Steam and Telegram accounts stay yours.",
+    "deleteDescription": "Delete your SQUAD account, profile and game data. Anonymized moderation records may be retained. Your Steam and Telegram accounts stay yours.",
     "deleteOpen": "Delete account",
     "deleteConfirmTitle": "Permanently delete your account?",
-    "deleteConfirmDescription": "Your SQUAD profile, statistics, preferences and sessions will be deleted. Unsaved changes will be lost. This data cannot be restored.",
+    "deleteConfirmDescription": "Your SQUAD profile, stats, settings, sessions and reports you submitted will be deleted. Reports about the account will be retained without a link to it or their descriptions; the moderation audit will remain. Unsaved changes will be lost. Deleted data cannot be restored.",
     "deleteAcknowledgement": "I understand that my SQUAD data will be permanently deleted",
     "deleteConfirm": "Yes, delete account",
     "deleting": "Deleting…",
@@ -243,6 +243,10 @@
       "USER_BANNED": {
         "missing": "This account is banned and cannot publish.",
         "complete": "Account can publish a profile"
+      },
+      "MODERATION_HIDDEN": {
+        "missing": "Moderation has hidden this profile. Contact support.",
+        "complete": "This profile can be published."
       }
     },
     "options": {
@@ -298,7 +302,7 @@
     }
   },
   "errors": {
-    "ACCOUNT_DELETED": "Your SQUAD account and associated data have been deleted. You can close the Mini App.",
+    "ACCOUNT_DELETED": "Your SQUAD account, profile and game data were deleted. Anonymized moderation records may be retained. You can close the Mini App.",
     "STEAM_NOT_LINKED": "Connect Steam before requesting stats.",
     "STEAM_STATS_UNAVAILABLE": "Steam stats are temporarily unavailable. Please try again later.",
     "FACEIT_UNAVAILABLE": "FACEIT stats are temporarily unavailable. Please try again later.",
@@ -460,11 +464,26 @@
     "errorTitle": "Could not load requests",
     "end": "These are all your requests.",
     "empty": {
-      "incoming": { "title": "No incoming requests yet", "description": "When someone invites you to play, their request will appear here." },
-      "outgoing": { "title": "No invitations sent yet", "description": "Open the feed and invite someone you'd like to play with." }
+      "incoming": {
+        "title": "No incoming requests yet",
+        "description": "When someone invites you to play, their request will appear here."
+      },
+      "outgoing": {
+        "title": "No invitations sent yet",
+        "description": "Open the feed and invite someone you'd like to play with."
+      }
     },
-    "status": { "PENDING": "Waiting for a reply", "ACCEPTED": "Accepted", "DECLINED": "Declined", "CANCELED": "Canceled", "EXPIRED": "Expired" },
-    "validation": { "CONTACTS_NOT_ALLOWED": "Remove links and contact details. You can exchange contacts after acceptance.", "TOO_LONG": "Keep the message within 200 characters." },
+    "status": {
+      "PENDING": "Waiting for a reply",
+      "ACCEPTED": "Accepted",
+      "DECLINED": "Declined",
+      "CANCELED": "Canceled",
+      "EXPIRED": "Expired"
+    },
+    "validation": {
+      "CONTACTS_NOT_ALLOWED": "Remove links and contact details. You can exchange contacts after acceptance.",
+      "TOO_LONG": "Keep the message within 200 characters."
+    },
     "errors": {
       "ONBOARDING_INCOMPLETE": "Complete your community setup in your profile.",
       "STEAM_REQUIRED": "Connect Steam in your profile first.",
@@ -484,6 +503,65 @@
       "INVALID_CURSOR": "The list has changed. Refresh it to continue.",
       "REQUEST_MESSAGE_INVALID": "Check your message: up to 200 characters, without links or contacts.",
       "VALIDATION_ERROR": "Check your message: up to 200 characters, without links or contacts."
+    }
+  },
+  "moderation": {
+    "report": "Report",
+    "reportTitle": "Report a player",
+    "reportPrivacy": "Only moderators can read the description. The player will not know who sent the report.",
+    "reason": "Reason",
+    "reasonPlaceholder": "Choose a reason",
+    "details": "Description (optional)",
+    "counter": "{{count}}/{{max}}",
+    "blockToo": "Also block this player?",
+    "blockDescription": "The player will disappear from your feed. Pending requests will be canceled and contact access revoked.",
+    "confirmation": "Review the reason and description, then confirm sending.",
+    "send": "Confirm and send",
+    "sending": "Sending…",
+    "received": "Report received. Moderators will review it under the community rules.",
+    "blocked": "Player blocked.",
+    "blockFailed": "Your report was saved, but blocking failed. You can retry the block separately.",
+    "retryBlock": "Retry block",
+    "close": "Done",
+    "dailyReset": "You can send another report {{date}}.",
+    "blocksTitle": "Blocked players",
+    "blocksDescription": "Unblocking does not restore canceled requests or remove a block made by the other player.",
+    "showBlocks": "Show list",
+    "hideBlocks": "Hide list",
+    "unblock": "Unblock",
+    "unblocking": "Unblocking…",
+    "loadingBlocks": "Loading blocked players…",
+    "emptyBlocks": "You have not blocked anyone.",
+    "unavailablePlayer": "Unavailable profile",
+    "unavailableDescription": "The profile is hidden or no longer available. You can still unblock it.",
+    "communityTitle": "Rules and help",
+    "communityDescription": "Open the bot to read the rules, learn about your data and contact support.",
+    "communityLoading": "Loading links…",
+    "communityUnavailable": "Could not load the links.",
+    "reasons": {
+      "SPAM": "Spam",
+      "HARASSMENT": "Harassment",
+      "CHEATING": "Suspected cheating",
+      "FAKE_PROFILE": "Misleading profile",
+      "CONTACT_SPAM": "Direct message spam",
+      "UNDERAGE": "Below the minimum age",
+      "OTHER": "Other"
+    },
+    "links": {
+      "rules": "Rules",
+      "privacy": "Privacy",
+      "help": "Help"
+    },
+    "errors": {
+      "REPORT_TARGET_NOT_FOUND": "This player is unavailable for reporting. Refresh the feed or requests.",
+      "REPORT_SELF": "You cannot report yourself.",
+      "REPORT_DAILY_LIMIT_REACHED": "Daily report limit reached.",
+      "REPORT_TARGET_REQUIRED": "Choose a player to report.",
+      "TOO_LONG": "The description must be no longer than 500 characters.",
+      "VALIDATION_ERROR": "Check the reason and description.",
+      "ONBOARDING_INCOMPLETE": "Complete onboarding first.",
+      "RATE_LIMITED": "Too many actions. Try again shortly.",
+      "BLOCK_NOT_FOUND": "The block has already been removed."
     }
   }
 }

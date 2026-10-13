@@ -72,7 +72,7 @@ describe('profile publication and public preview', () => {
   it('renders each missing requirement, field hints and unsaved changes without claiming readiness', () => {
     const html = renderToStaticMarkup(<PublishChecklist requirements={[
       { code: 'ONBOARDING_INCOMPLETE' }, { code: 'STEAM_REQUIRED' },
-      { code: 'PROFILE_INCOMPLETE', fields: ['roles', 'region'] }, { code: 'PROFILE_INVALID' }, { code: 'USER_BANNED' },
+      { code: 'PROFILE_INCOMPLETE', fields: ['roles', 'region'] }, { code: 'PROFILE_INVALID' }, { code: 'USER_BANNED' }, { code: 'MODERATION_HIDDEN' },
     ]} dirty />);
     for (const requirement of Object.values(ru.profile.requirements)) expect(html).toContain(requirement.missing);
     expect(html).toContain(ru.profile.roles);

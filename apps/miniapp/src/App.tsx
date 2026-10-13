@@ -8,6 +8,7 @@ import { createOnboardingSubmission } from './onboarding.js';
 import { StatsCard } from './StatsCard.js';
 import { SteamLinkProgress } from './SteamLinkProgress.js';
 import { AccountDeletionSection, ProfileScreen } from './ProfileScreen.js';
+import { BlockedSection, CommunitySection } from './BlockedSection.js';
 import { FeedScreen } from './FeedScreen.js';
 import { RequestsScreen } from './RequestsScreen.js';
 import { ConfirmationDialog } from './RequestActions.js';
@@ -361,6 +362,8 @@ export function App() {
           {user.steam && !onboardingRequired && <StatsCard key={user.id} onAuthError={handleError} />}
           {user.steam && !onboardingRequired && <ProfileScreen key={`profile-${user.id}`} onAuthError={handleError}
             onPrivacyChanged={setUser} onDirtyChange={setProfileDirty} />}
+          {!onboardingRequired && <div className="account-panel"><BlockedSection key={`blocks-${user.id}`} onAuthError={handleError} /></div>}
+          <div className="account-panel"><CommunitySection /></div>
           <AccountDeletionSection key={`delete-${user.id}`} onAuthError={handleError} onDeleted={() => {
               api.forgetSession(); setUser(null); setLink(null); setExpiresAt(null); setProfileDirty(false); setAuthError('ACCOUNT_DELETED');
             }} />

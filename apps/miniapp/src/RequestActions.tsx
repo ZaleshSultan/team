@@ -5,6 +5,7 @@ import { api, ApiError, errorCode } from './api.js';
 import { createRequestSubmission, formatRequestDate, REQUEST_MESSAGE_MAX_LENGTH, requestAuthErrors, requestEligibilityErrors, requestMessageLength, telegramContactUrl, validateRequestMessage, type RequestDirection } from './requests.js';
 import { openExternalLink } from './telegram.js';
 import './requests.css';
+import { ReportButton } from './ReportDialog.js';
 
 type ActionCallbacks = { onAuthError(error: unknown): void; onChanged(): void };
 
@@ -128,6 +129,7 @@ export function FeedRequestActions({ player, onBlocked, onAuthError, onChanged, 
     {(sent || error === 'REQUEST_ALREADY_RECEIVED' || error === 'REQUEST_ALREADY_SENT' || error === 'REQUEST_ALREADY_ACCEPTED') && <button className="secondary-button" type="button" onClick={onRequests}>{t(error === 'REQUEST_ALREADY_RECEIVED' ? 'requests.openIncoming' : 'requests.openRequests')}</button>}
     {error && requestEligibilityErrors.includes(error) && <button className="secondary-button" type="button" onClick={onProfile}>{t('feed.completeProfile')}</button>}
     <BlockProfileButton player={player} disabled={busy} onBlocked={onBlocked} onAuthError={onAuthError} onChanged={onChanged} />
+    <ReportButton target={{ profileId: player.id }} profileId={player.id} disabled={busy} onBlocked={onBlocked} onAuthError={onAuthError} onChanged={onChanged} />
   </div>;
 }
 
@@ -193,5 +195,6 @@ export function RequestItemActions({ item, direction, onUpdated, onBlocked, onAu
     {error && <RequestError code={error} />}
     {item.status === 'ACCEPTED' && <AcceptedContact item={item} onAuthError={onAuthError} />}
     {item.player && <BlockProfileButton player={item.player} disabled={Boolean(busy)} onBlocked={onBlocked} onAuthError={onAuthError} onChanged={onChanged} />}
+    <ReportButton target={{ requestId: item.id }} profileId={item.player?.id ?? null} disabled={Boolean(busy)} onBlocked={onBlocked} onAuthError={onAuthError} onChanged={onChanged} />
   </div>;
 }
