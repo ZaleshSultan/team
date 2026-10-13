@@ -22,6 +22,7 @@
     "loadingDetail": "Verifying Telegram data. This will take a few seconds.",
     "telegramTitle": "Start in Telegram",
     "errorTitle": "Sign in again",
+    "unavailableTitle": "Service temporarily unavailable",
     "retry": "Try again",
     "logout": "Sign out",
     "loggingOut": "Signing out…"

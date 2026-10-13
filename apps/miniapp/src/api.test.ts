@@ -222,6 +222,39 @@ describe('Mini App authentication client', () => {
     expect(send).toHaveBeenCalledTimes(2);
   });
 
+  it.each([502, 503, 504])('identifies a proxy HTTP %s outage and permits a later login retry', async (status) => {
+    const send = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response('<html>upstream private details</html>', { status, headers: { 'Content-Type': 'text/html' } }))
+      .mockResolvedValueOnce(response(authPayload));
+    const client = new SquadApi('', send, () => now);
+    await expect(client.authenticate('signed-telegram-data')).rejects.toMatchObject({
+      code: 'DEPENDENCIES_UNAVAILABLE', message: 'DEPENDENCIES_UNAVAILABLE',
+    });
+    await expect(client.authenticate('signed-telegram-data')).resolves.toEqual(authPayload);
+    expect(send).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps the authenticated session when a proxy outage interrupts a request', async () => {
+    const send = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(response(authPayload))
+      .mockResolvedValueOnce(new Response('Service unavailable', { status: 503 }))
+      .mockResolvedValueOnce(response({ user: authPayload.user }));
+    const client = new SquadApi('', send, () => now);
+    await client.authenticate('signed-telegram-data');
+    await expect(client.me()).rejects.toMatchObject({ code: 'DEPENDENCIES_UNAVAILABLE' });
+    await expect(client.me()).resolves.toEqual({ user: authPayload.user });
+    expect(send.mock.calls[2]?.[1]?.headers).toMatchObject({ Authorization: `Bearer ${authPayload.token}` });
+  });
+
+  it('preserves structured upstream error codes instead of replacing them with the proxy fallback', async () => {
+    const send = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(response(authPayload))
+      .mockResolvedValueOnce(response({ error: { code: 'STATS_UNAVAILABLE', message: 'private provider details' } }, 503));
+    const client = new SquadApi('', send, () => now);
+    await client.authenticate('signed-telegram-data');
+    await expect(client.stats()).rejects.toMatchObject({ code: 'STATS_UNAVAILABLE', message: 'STATS_UNAVAILABLE' });
+  });
+
   it('clears local session memory even when remote logout fails', async () => {
     const send = vi.fn<typeof fetch>()
       .mockResolvedValueOnce(response(authPayload))

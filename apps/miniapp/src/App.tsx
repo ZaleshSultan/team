@@ -24,6 +24,20 @@ function Crosshair({ className = '' }: { className?: string }) {
   );
 }
 
+export function AuthErrorPanel({ code, onRetry, minimumAge }: { code: string; onRetry: () => void; minimumAge?: number }) {
+  const { t } = useTranslation();
+  const title = code === 'TELEGRAM_REQUIRED' ? 'auth.telegramTitle'
+    : code === 'ACCOUNT_DELETED' ? 'profile.accountDeletedTitle'
+      : ['DEPENDENCIES_UNAVAILABLE', 'NETWORK_ERROR'].includes(code) ? 'auth.unavailableTitle' : 'auth.errorTitle';
+  return <section className="account-panel state-panel">
+    <span className="state-icon" aria-hidden="true"><Crosshair /></span>
+    <h2>{t(title)}</h2>
+    <p role="alert">{t(`errors.${code}`, { age: minimumAge, defaultValue: t('errors.REQUEST_FAILED') })}</p>
+    {!['TELEGRAM_REQUIRED', 'ACCOUNT_DELETED'].includes(code) && <button className="primary-button" type="button"
+      onClick={onRetry}>{t('auth.retry')}</button>}
+  </section>;
+}
+
 export function App() {
   const { t, i18n } = useTranslation();
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -241,13 +255,8 @@ export function App() {
           <span className="spinner" aria-hidden="true" /><h2>{t('auth.loading')}</h2><p>{t('auth.loadingDetail')}</p>
         </section>}
 
-        {!loading && authError && <section className="account-panel state-panel">
-          <span className="state-icon" aria-hidden="true"><Crosshair /></span>
-          <h2>{t(authError === 'TELEGRAM_REQUIRED' ? 'auth.telegramTitle' : authError === 'ACCOUNT_DELETED' ? 'profile.accountDeletedTitle' : 'auth.errorTitle')}</h2>
-          <p role="alert">{errorText(authError)}</p>
-          {!['TELEGRAM_REQUIRED', 'ACCOUNT_DELETED'].includes(authError) && <button className="primary-button" type="button"
-            onClick={() => setLoginGeneration((generation) => generation + 1)}>{t('auth.retry')}</button>}
-        </section>}
+        {!loading && authError && <AuthErrorPanel code={authError} minimumAge={user?.onboarding.minimumAge}
+          onRetry={() => setLoginGeneration((generation) => generation + 1)} />}
 
         {!loading && user && <>
           <nav className="squad-navigation" aria-label={t('feed.navigation')}>

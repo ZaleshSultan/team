@@ -83,12 +83,14 @@ Steam OpenID verifies identity and needs no Steam API key. `STEAM_WEB_API_KEY` a
 Target: a single HTTPS server using Docker Compose. Set real HTTPS origins and credentials in the server's `.env`, use a strong URL-safe database password (e.g. generated hex), and keep DB/cache ports bound to loopback. The full app uses three images from the Dockerfile: API, bot and static Mini App/nginx. Build and migrate before launch:
 
 ```sh
-docker compose -f compose.yaml -f compose.production.yaml --profile app build
-docker compose -f compose.yaml -f compose.production.yaml up -d --wait postgres redis
-docker compose -f compose.yaml -f compose.production.yaml --profile app run --rm api pnpm db:migrate
-docker compose -f compose.yaml -f compose.production.yaml --profile app run --rm api pnpm db:seed
+docker compose -f compose.yaml -f compose.production.yaml --profile app build &&
+docker compose -f compose.yaml -f compose.production.yaml up -d --wait --wait-timeout 120 postgres redis &&
+docker compose -f compose.yaml -f compose.production.yaml --profile app run --rm --no-deps api pnpm db:migrate &&
+docker compose -f compose.yaml -f compose.production.yaml --profile app run --rm --no-deps api pnpm db:seed &&
 docker compose -f compose.yaml -f compose.production.yaml --profile app up -d
 ```
+
+The `&&` chain stops on failure, so application launch requires successful dependency health checks, migrations and seeding. For updates to an existing installation, keep its current Compose file set and follow the [update and database-connectivity recovery instructions](docs/feed.md#deployment-recovery-p1001).
 
 Use these production files together from the first server launch: the override allocates a fixed private subnet and trusts only nginx's IP. If moving an existing dev stack to that subnet, stop its containers with `docker compose down` **without `-v`** first; volumes remain. If `172.30.75.0/24` conflicts with the server, change the subnet, gateway, trusted proxy IP and nginx `set_real_ip_from` together.
 

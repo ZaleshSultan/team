@@ -148,9 +148,41 @@ Browser QA used the actual App/FeedScreen with mocked HTTP responses on a separa
 M5 introduces **no schema migration**. New configuration has defaults, so no server `.env` change is necessary for default behavior. Leave synthetic tools disabled. After reviewing and obtaining the updated checkout on the server, use the same Compose files as the existing installation. For the documented production override:
 
 ```sh
-docker compose -f compose.yaml -f compose.production.yaml --profile app build api bot miniapp
-docker compose -f compose.yaml -f compose.production.yaml --profile app run --rm --no-deps api pnpm db:migrate
+docker compose -f compose.yaml -f compose.production.yaml --profile app build api bot miniapp &&
+docker compose -f compose.yaml -f compose.production.yaml up -d --no-recreate --wait --wait-timeout 120 postgres redis &&
+docker compose -f compose.yaml -f compose.production.yaml --profile app run --rm --no-deps api pnpm db:migrate &&
 docker compose -f compose.yaml -f compose.production.yaml --profile app up -d --no-deps --force-recreate api bot miniapp
 ```
 
-For an installation already using only `compose.yaml` behind a local HTTPS tunnel, omit both `-f` arguments on all three commands. Do not switch network/proxy configurations as part of this update. The migration command checks/applies previously committed migrations; M5 itself adds none. These are deployment instructions only: the implementation task does not run them, restart the running stack or push to GitHub.
+For an installation already using only `compose.yaml` behind a local HTTPS tunnel, omit both `-f` arguments on all four commands. Do not switch network/proxy configurations as part of this update. The dependency step starts stopped PostgreSQL/Redis containers without recreating existing ones and waits for health checks. Keep the `&&` chain so a failed build, dependency check or migration prevents application recreation. The migration command checks/applies previously committed migrations; M5 itself adds none. These are deployment instructions only: the implementation task does not run them, restart the running stack or push to GitHub.
+
+### Deployment recovery: P1001
+
+If migration reports `P1001: Can't reach database server at postgres:5432`, check container state with `docker compose --profile app ps --all` using the installation's current Compose files. A previous `down` can leave PostgreSQL/Redis stopped, including when it is interrupted. `run --no-deps` and `up --no-deps` skip starting dependencies; an application container reported as `Started` does not establish database connectivity or successful migration.
+
+If the images already built successfully and PostgreSQL/Redis are stopped, run this from the repository for an installation using only `compose.yaml`:
+
+```sh
+docker compose up -d --no-recreate --wait --wait-timeout 120 postgres redis &&
+docker compose --profile app run --rm --no-deps api pnpm db:migrate &&
+docker compose --profile app up -d --no-deps --force-recreate api bot miniapp
+```
+
+For an installation already using the production override, add `-f compose.yaml -f compose.production.yaml` immediately after `docker compose` in every command above and below. Existing database/cache containers are preserved; stopped ones are started. Rebuilding images or reseeding is unnecessary for this recovery. If dependency startup or migration fails, resolve that failure before recreating applications.
+
+After the API has started, verify container state and database/cache readiness:
+
+```sh
+docker compose --profile app ps --all
+curl --fail --silent --show-error http://127.0.0.1:8088/ready
+```
+
+Use the configured frontend port if it differs from 8088. PostgreSQL/Redis should be healthy, the API should remain running, and `/ready` should return `{"status":"ok"}`. The readiness endpoint may briefly fail while the API starts; retry after startup. These recovery commands are for the server operator and are not run by the implementation task.
+
+If PostgreSQL/Redis are healthy and migrations succeeded but the API keeps restarting, check configuration before repeating migrations. In particular, `MINIAPP_ORIGIN` must be the frontend's HTTPS origin (scheme, hostname and optional port, with no path, credentials, query or fragment). For a single-origin installation, use the origin of the existing `MINIAPP_URL`. Malformed URL fields now produce a field-specific `Invalid environment` message without exposing their values; older images may show only the generic startup failure. Correct the server's `.env`, then recreate application containers with the current Compose file set. A configuration-only correction requires neither a rebuild nor another migration:
+
+```sh
+docker compose --profile app up -d --no-deps --force-recreate api bot miniapp
+```
+
+Verify `/ready` again after startup. The Mini App classifies proxy 502/503/504 responses as temporary service unavailability, so backend outages no longer present as a request to sign in again.

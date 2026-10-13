@@ -22,6 +22,7 @@
     "loadingDetail": "Проверяем данные Telegram. Это займёт несколько секунд.",
     "telegramTitle": "Начни в Telegram",
     "errorTitle": "Нужен повторный вход",
+    "unavailableTitle": "Сервис временно недоступен",
     "retry": "Попробовать снова",
     "logout": "Выйти",
     "loggingOut": "Выходим…"

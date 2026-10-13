@@ -88,9 +88,10 @@ Migration `202610130001_m4_profile_nickname` adds nullable `player_profiles.nick
 After transferring the reviewed commits to the server, rebuild, migrate, and recreate application services using the same Compose file set already in use:
 
 ```sh
-docker compose --profile app build api bot miniapp
-docker compose --profile app run --rm --no-deps api pnpm db:migrate
+docker compose --profile app build api bot miniapp &&
+docker compose up -d --no-recreate --wait --wait-timeout 120 postgres redis &&
+docker compose --profile app run --rm --no-deps api pnpm db:migrate &&
 docker compose --profile app up -d --no-deps --force-recreate api bot miniapp
 ```
 
-For a stack already using `compose.production.yaml`, add `-f compose.yaml -f compose.production.yaml` immediately after `docker compose` in each command. No new seed or environment change is needed. These commands are instructions only; development of M4 does not change or deploy the running stack.
+For a stack already using `compose.production.yaml`, add `-f compose.yaml -f compose.production.yaml` immediately after `docker compose` in each command. The dependency step starts stopped PostgreSQL/Redis containers without recreating existing ones and waits for health checks. Keep the `&&` chain so a failed build, dependency check or migration prevents application recreation. See [P1001 recovery](feed.md#deployment-recovery-p1001) if a previous attempt failed. No new seed or environment change is needed. These commands are instructions only; development of M4 does not change or deploy the running stack.

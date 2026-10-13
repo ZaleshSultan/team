@@ -173,7 +173,8 @@ export class SquadApi {
       if (controller.signal.aborted) throw new DOMException('Aborted', 'AbortError');
       if (!response.ok) {
         if (response.status === 401 && authenticated) forgetRejectedSession();
-        let code = response.status === 401 ? 'SESSION_EXPIRED' : 'REQUEST_FAILED';
+        let code = response.status === 401 ? 'SESSION_EXPIRED'
+          : [502, 503, 504].includes(response.status) ? 'DEPENDENCIES_UNAVAILABLE' : 'REQUEST_FAILED';
         let field: string | undefined;
         let requirements: (PublishRequirement | FeedRequirement)[] | undefined;
         let issues: { code: string; field: string }[] | undefined;

@@ -110,14 +110,18 @@ After transferring the reviewed commits to an **already running server**, run
 from the Squad repository with the same Compose configuration currently in use:
 
 ```sh
-docker compose --profile app build api bot miniapp
-docker compose --profile app run --rm --no-deps api pnpm db:migrate
+docker compose --profile app build api bot miniapp &&
+docker compose up -d --no-recreate --wait --wait-timeout 120 postgres redis &&
+docker compose --profile app run --rm --no-deps api pnpm db:migrate &&
 docker compose --profile app up -d --no-deps --force-recreate api bot miniapp
 ```
 
 If that server already uses `compose.production.yaml`, add
 `-f compose.yaml -f compose.production.yaml` immediately after `docker compose`
 in each command. Keep the current tunnel and proxy/network configuration. The
-commands rebuild application images, migrate and recreate application containers;
-they do not stop or recreate PostgreSQL/Redis. The existing CS2 seed remains valid.
+commands rebuild application images, start stopped PostgreSQL/Redis containers
+without recreating existing ones, wait for health checks, migrate and recreate
+application containers. Keep the `&&` chain so a failure prevents subsequent
+steps. See [P1001 recovery](feed.md#deployment-recovery-p1001) if a previous attempt
+failed. The existing CS2 seed remains valid.
 No deployment or remote push is performed by this implementation task.

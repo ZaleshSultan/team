@@ -20,8 +20,8 @@ const envSchema = z.object({
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   HOST: z.string().default('0.0.0.0'),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
-  DATABASE_URL: z.string().url().refine((value) => ['postgres:', 'postgresql:'].includes(new URL(value).protocol), 'Must be a PostgreSQL URL'),
-  REDIS_URL: z.string().url().refine((value) => ['redis:', 'rediss:'].includes(new URL(value).protocol), 'Must be a Redis URL'),
+  DATABASE_URL: z.string().url().refine((value) => URL.canParse(value) && ['postgres:', 'postgresql:'].includes(new URL(value).protocol), 'Must be a PostgreSQL URL'),
+  REDIS_URL: z.string().url().refine((value) => URL.canParse(value) && ['redis:', 'rediss:'].includes(new URL(value).protocol), 'Must be a Redis URL'),
   BOT_TOKEN: z.string().regex(/^\d+:[A-Za-z0-9_-]{20,}$/),
   BOT_USERNAME: z.string().regex(/^[A-Za-z0-9_]{5,32}$/),
   MINIAPP_URL: z.string().url(),
@@ -46,6 +46,9 @@ const envSchema = z.object({
   ADMIN_TELEGRAM_IDS: z.string().default(''),
 }).superRefine((env, ctx) => {
   for (const key of ['MINIAPP_URL', 'PUBLIC_API_URL', 'MINIAPP_ORIGIN'] as const) {
+    // Zod still runs refinements after a URL validation issue. Preserve that
+    // issue so loadConfig reports the field without throwing or echoing its value.
+    if (!URL.canParse(env[key])) continue;
     const url = new URL(env[key]);
     if (url.protocol !== 'https:' && !(url.protocol === 'http:' && env.NODE_ENV !== 'production' && ['localhost', '127.0.0.1'].includes(url.hostname))) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: [key], message: 'Must use HTTPS (localhost allowed for development)' });
