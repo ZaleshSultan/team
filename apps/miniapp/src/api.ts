@@ -7,6 +7,13 @@ import {
   statsResponseSchema,
   manualSyncResponseSchema,
   faceitLinkInputSchema,
+  profileResponseSchema,
+  publishResponseSchema,
+  publicPlayerCardSchema,
+  privacyInputSchema,
+  deleteAccountInputSchema,
+  type ProfileUpdateInput,
+  type PublishRequirement,
   type AuthResponse,
 } from '@squad/shared';
 
@@ -15,7 +22,7 @@ interface ResponseSchema<T> {
 }
 
 export class ApiError extends Error {
-  constructor(public readonly code: string) {
+  constructor(public readonly code: string, public readonly field?: string, public readonly requirements?: PublishRequirement[], public readonly issues?: { code: string; field: string }[]) {
     super(code);
     this.name = 'ApiError';
   }
@@ -89,6 +96,31 @@ export class SquadApi {
     return this.request('/api/me/faceit/link', statsResponseSchema, faceitLinkInputSchema.parse({ nickname }), true, signal);
   }
 
+  profile(signal?: AbortSignal) {
+    return this.request('/api/me/profile/cs2', profileResponseSchema, undefined, true, signal);
+  }
+
+  saveProfile(input: ProfileUpdateInput, signal?: AbortSignal) {
+    return this.request('/api/me/profile/cs2', profileResponseSchema, input, true, signal, 'PUT');
+  }
+
+  publishProfile(published: boolean, signal?: AbortSignal) {
+    return this.request('/api/me/profile/cs2/publish', publishResponseSchema, { published }, true, signal, 'PUT');
+  }
+
+  previewProfile(signal?: AbortSignal) {
+    return this.request('/api/me/profile/cs2/preview', publicPlayerCardSchema, undefined, true, signal);
+  }
+
+  changePrivacy(shareSteamActivity: boolean, signal?: AbortSignal) {
+    return this.request('/api/me/privacy', meResponseSchema, privacyInputSchema.parse({ shareSteamActivity }), true, signal, 'PATCH');
+  }
+
+  async deleteAccount(signal?: AbortSignal) {
+    await this.request('/api/me', { parse: () => undefined }, deleteAccountInputSchema.parse({ confirmation: 'DELETE' }), true, signal, 'DELETE');
+    this.forgetSession();
+  }
+
   async logout() {
     try {
       await this.request('/api/auth/logout', { parse: () => undefined }, {});
@@ -101,7 +133,7 @@ export class SquadApi {
     this.session = undefined;
   }
 
-  private async request<T>(path: string, schema: ResponseSchema<T>, body?: unknown, authenticated = true, signal?: AbortSignal): Promise<T> {
+  private async request<T>(path: string, schema: ResponseSchema<T>, body?: unknown, authenticated = true, signal?: AbortSignal, method?: 'PUT' | 'PATCH' | 'DELETE'): Promise<T> {
     const headers: Record<string, string> = { Accept: 'application/json' };
     const sessionToken = this.session?.token;
     const forgetRejectedSession = () => {
@@ -122,7 +154,7 @@ export class SquadApi {
     const timeout = setTimeout(cancel, 15_000);
     try {
       const response = await this.send(`${this.baseUrl}${path}`, {
-        method: body === undefined ? 'GET' : 'POST',
+        method: method ?? (body === undefined ? 'GET' : 'POST'),
         headers,
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),
         signal: controller.signal,
@@ -134,15 +166,23 @@ export class SquadApi {
       if (!response.ok) {
         if (response.status === 401 && authenticated) forgetRejectedSession();
         let code = response.status === 401 ? 'SESSION_EXPIRED' : 'REQUEST_FAILED';
+        let field: string | undefined;
+        let requirements: PublishRequirement[] | undefined;
+        let issues: { code: string; field: string }[] | undefined;
         try {
           const parsed = apiErrorSchema.safeParse(await response.json());
-          if (parsed.success) code = parsed.data.error.code;
+          if (parsed.success) {
+            code = parsed.data.error.code;
+            field = parsed.data.error.field;
+            requirements = parsed.data.error.requirements;
+            issues = parsed.data.error.issues;
+          }
         } catch (error) {
           if (controller.signal.aborted) throw error;
           // A proxy may return an HTML error page.
         }
         if (code === 'USER_BANNED' && authenticated) forgetRejectedSession();
-        throw new ApiError(code);
+        throw new ApiError(code, field, requirements, issues);
       }
       try {
         return schema.parse(response.status === 204 ? undefined : await response.json());

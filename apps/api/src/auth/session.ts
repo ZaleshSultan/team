@@ -32,10 +32,10 @@ export async function sessionRateLimitKey(request: FastifyRequest, deps: Session
   return session && session.expiresAt > deps.now() ? `user:${session.userId}` : `ip:${request.ip}`;
 }
 
-export async function requireSession(request: FastifyRequest, deps: SessionDependencies): Promise<SessionUser> {
+export async function requireSession(request: FastifyRequest, deps: SessionDependencies, options: { allowBanned?: boolean } = {}): Promise<SessionUser> {
   if (!bearerToken(request)) throw new AppError(401, 'SESSION_INVALID', 'A valid session is required');
   const session = await resolveSession(request, deps);
   if (!session || session.expiresAt <= deps.now()) throw new AppError(401, 'SESSION_EXPIRED', 'The session has expired');
-  if (session.user.isBanned) throw new AppError(403, 'USER_BANNED', 'This account is banned');
+  if (session.user.isBanned && !options.allowBanned) throw new AppError(403, 'USER_BANNED', 'This account is banned');
   return session.user;
 }

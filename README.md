@@ -1,6 +1,6 @@
 # Squad — Telegram CS2 teammates
 
-TypeScript MVP built in reviewable milestones. **M1–M3 are implemented; stopped for review.** Telegram authentication, consent and external Steam linking are followed by cached Steam/FACEIT stats. Profile editing, search, requests and moderation remain M4–M7. See [M3 stats and operations](docs/stats.md) and [API mapping verification limits](docs/api-mappings.md).
+TypeScript MVP built in reviewable milestones. **M1–M4 are implemented; stopped for review.** Telegram authentication, consent, external Steam linking and cached Steam/FACEIT stats are followed by the CS2 profile editor, publication checklist and privacy-safe preview. Search, requests and moderation remain M5–M7. See [M4 profiles and privacy](docs/profile.md), [M3 stats and operations](docs/stats.md) and [API mapping verification limits](docs/api-mappings.md).
 
 ## Requirements
 
@@ -74,7 +74,7 @@ Game logic belongs behind `GameProvider`, not inside generic search/request code
 
 Steam OpenID verifies identity and needs no Steam API key. `STEAM_WEB_API_KEY` and `FACEIT_API_KEY` enable their respective cached stats providers, sourced from [Steam](https://steamcommunity.com/dev/apikey) and [FACEIT developers](https://developers.faceit.com/). Missing keys disable only that provider; the app shows stats unavailable. No Steam/FACEIT passwords or session tokens are accepted or stored. Onboarding requires a Telegram username, age confirmation (default 18, configurable), and community rules consent; no birth date is stored. The age threshold is a product setting, not a claim about jurisdiction-specific age eligibility.
 
-`share_steam_activity` defaults to false. The public serializer omits exact activity and the library when disabled; the owner can always inspect their cache. Session/start-link/state/browser secrets are stored only as hashes; session tokens stay in client memory. Health responses expose no credentials. API logs exclude authorization and URLs, including provider URLs with Steam keys. [Authentication and external Steam flow](docs/authentication.md) describes the protocol, endpoints, state transitions, and test boundaries.
+`share_steam_activity` defaults to false. The strict public player card always omits account identifiers and the library; exact CS2 hours appear only when sharing is enabled. The owner can always inspect their cache. Session/start-link/state/browser secrets are stored only as hashes; session tokens stay in client memory. Health responses expose no credentials. API logs exclude authorization and URLs, including provider URLs with Steam keys. [Authentication and external Steam flow](docs/authentication.md) describes the protocol, endpoints, state transitions, and test boundaries.
 
 ## Deployment approach
 
@@ -118,7 +118,7 @@ Automated provider responses are injected for repeatable tests. Live Telegram/St
 - M1: repo, infrastructure, DB schema/migration and seed.
 - M2: Telegram login, onboarding consent/username, external-browser Steam OpenID and polling.
 - M3: Steam/FACEIT cached sync, all owned games, six-hour refresh.
-- M4: profile editor and private-profile guidance.
+- M4: CS2 profile editor, publication checklist, badges, privacy-safe preview and account deletion UI.
 - M5: feed, filters and cursor pagination.
 - M6: requests, ten daily outgoing requests, queued notifications/contact exchange.
 - M7: reports/blocks, bot admin commands, moderation and final validation.

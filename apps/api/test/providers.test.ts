@@ -15,7 +15,7 @@ const json = (body: unknown, status = 200, headers: Record<string, string> = {})
 
 describe('CS2 provider', () => {
   const provider = new Cs2GameProvider();
-  const profile = { gameSlug: 'cs2', roles: ['awp'], hasMic: true, languages: ['ru'], region: 'EU', playTimes: ['evening'], lookingFor: ['duo'], bio: '' };
+  const profile = { gameSlug: 'cs2', nickname: null, roles: ['awp'], hasMic: true, languages: ['ru'], region: 'EU', playTimes: ['evening'], lookingFor: ['duo'], bio: '' };
   it('pins CS2 catalog and validates game-specific inputs', () => {
     expect(provider.slug).toBe('cs2'); expect(provider.steamAppId).toBe(730);
     expect(provider.validateProfile(profile)).toEqual(profile);
@@ -23,9 +23,9 @@ describe('CS2 provider', () => {
     expect(() => provider.validateProfile({ ...profile, roles: ['healer'] })).toThrow();
   });
   it('requires Steam; optional FACEIT is separately verified only by an exact Steam ID', () => {
-    expect(provider.isVerified({ steamId64: null, faceitSteamId64: ID })).toBe(false);
-    expect(provider.isVerified({ steamId64: ID, faceitSteamId64: null })).toBe(true);
-    expect(provider.isVerified({ steamId64: 'invalid', faceitSteamId64: null })).toBe(false);
+    expect(provider.isVerified({ steamId64: null, faceitSteamId64: ID })).toEqual({ steamVerified: false, faceitVerified: false });
+    expect(provider.isVerified({ steamId64: ID, faceitSteamId64: null })).toEqual({ steamVerified: true, faceitVerified: false });
+    expect(provider.isVerified({ steamId64: 'invalid', faceitSteamId64: null })).toEqual({ steamVerified: false, faceitVerified: false });
     expect(isFaceitVerified({ steamId64: ID, faceitSteamId64: ID })).toBe(true);
     expect(isFaceitVerified({ steamId64: ID, faceitSteamId64: OTHER })).toBe(false);
     expect(isFaceitVerified({ steamId64: null, faceitSteamId64: null })).toBe(false);

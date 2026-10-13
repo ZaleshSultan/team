@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
 import type { PrismaClient } from '@prisma/client';
 import { loadConfig } from '../src/config.js';
-import { serializeOwnStats, serializePublicStats, serializeSync, type StatsUser } from '../src/stats/serializer.js';
+import { serializeOwnStats, serializeSync, type StatsUser } from '../src/stats/serializer.js';
 import { isStale, nextRefreshAt, retryDelay, staleAccountsWhere, SyncRetryError } from '../src/stats/policy.js';
 import { createProviderGate, scanStaleAccounts } from '../src/stats/queue.js';
 import { StatsService, type StatsProviders } from '../src/stats/service.js';
@@ -182,19 +182,14 @@ describe('stats sync service', () => {
   });
 });
 
-describe('cached API and privacy serializer', () => {
+describe('owner-only cached API serializer', () => {
   const statsUser = { steamAccount: { steamId64, personaName: 'Fixture', profileUrl: null, avatarUrl: null, profileVisibility: 3,
     gameDetailsPublic: true, timeCreated: null, syncedAt: now, vacBans: 0, gameBans: 0, daysSinceLastBan: 0, communityBanned: false, economyBan: 'none' },
     faceitAccount: null, statsSync: null,
     userGames: [{ steamAppId: 730, gameId: randomUUID(), name: 'CS2', playtimeTotal: 120, playtime2weeks: 60, syncedAt: now }] } as StatsUser;
-  it('omits exact activity and library completely unless explicitly shared; owner sees both', () => {
+  it('keeps exact activity and library available to the owner', () => {
     const own = serializeOwnStats(statsUser, { steam: true, faceit: false });
     expect(own.steam?.cs2?.playtimeTotal).toBe(120); expect(own.steam?.games).toHaveLength(1);
-    const hidden = serializePublicStats(own, { shareSteamActivity: false });
-    expect(hidden.steam).not.toHaveProperty('cs2'); expect(hidden.steam).not.toHaveProperty('games'); expect(hidden).not.toHaveProperty('sync');
-    const shared = serializePublicStats(own, { shareSteamActivity: true });
-    expect(shared.steam?.games).toHaveLength(1); expect(shared.steam?.cs2?.playtimeTotal).toBe(120);
-    expect(serializePublicStats({ ...own, steam: null }, { shareSteamActivity: false }).steam).toBeNull();
   });
   it('exposes private profile guidance without fake zero playtimes', () => {
     const own = serializeOwnStats({ ...statsUser, steamAccount: { ...statsUser.steamAccount!, profileVisibility: 1, gameDetailsPublic: false }, userGames: [] }, { steam: true, faceit: true });

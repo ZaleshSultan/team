@@ -6,6 +6,7 @@ import { getTelegramWebApp, openExternalLink, prepareTelegram } from './telegram
 import { isPendingSteamLink, pollSteamLink, type SteamLinkSnapshot } from './steam-polling.js';
 import { createOnboardingSubmission } from './onboarding.js';
 import { StatsCard } from './StatsCard.js';
+import { AccountDeletionSection, ProfileScreen } from './ProfileScreen.js';
 
 type LinkAttempt = SteamLinkSnapshot & { url: string };
 type Operation = 'onboarding' | 'telegram' | 'steam' | 'logout' | null;
@@ -34,9 +35,10 @@ export function App() {
   const [minimumAgeConfirmed, setMinimumAgeConfirmed] = useState<number | null>(null);
   const [rulesVersionAccepted, setRulesVersionAccepted] = useState<string | null>(null);
   const [shareSteamActivity, setShareSteamActivity] = useState(false);
+  const [profileDirty, setProfileDirty] = useState(false);
 
   useEffect(() => {
-    prepareTelegram();
+    const releaseTheme = prepareTelegram();
     let disposed = false;
     setLoading(true);
     setAuthError(null);
@@ -53,7 +55,7 @@ export function App() {
     }).finally(() => {
       if (!disposed) setLoading(false);
     });
-    return () => { disposed = true; };
+    return () => { disposed = true; releaseTheme(); };
   }, [loginGeneration]);
 
   useEffect(() => {
@@ -181,6 +183,7 @@ export function App() {
   }
 
   async function logout() {
+    if (profileDirty && !window.confirm(t('profile.leaveConfirmation'))) return;
     setOperation('logout');
     try { await api.logout(); } catch { /* Local memory is cleared even when logout cannot reach the server. */ }
     setUser(null);
@@ -228,9 +231,9 @@ export function App() {
 
         {!loading && authError && <section className="account-panel state-panel">
           <span className="state-icon" aria-hidden="true"><Crosshair /></span>
-          <h2>{t(authError === 'TELEGRAM_REQUIRED' ? 'auth.telegramTitle' : 'auth.errorTitle')}</h2>
+          <h2>{t(authError === 'TELEGRAM_REQUIRED' ? 'auth.telegramTitle' : authError === 'ACCOUNT_DELETED' ? 'profile.accountDeletedTitle' : 'auth.errorTitle')}</h2>
           <p role="alert">{errorText(authError)}</p>
-          {authError !== 'TELEGRAM_REQUIRED' && <button className="primary-button" type="button"
+          {!['TELEGRAM_REQUIRED', 'ACCOUNT_DELETED'].includes(authError) && <button className="primary-button" type="button"
             onClick={() => setLoginGeneration((generation) => generation + 1)}>{t('auth.retry')}</button>}
         </section>}
 
@@ -323,10 +326,14 @@ export function App() {
             </>}
           </section>
           {user.steam && !onboardingRequired && <StatsCard key={user.id} onAuthError={handleError} />}
+          {user.steam && !onboardingRequired && <ProfileScreen key={`profile-${user.id}`} onAuthError={handleError}
+            onPrivacyChanged={setUser} onDirtyChange={setProfileDirty} />}
+          <AccountDeletionSection key={`delete-${user.id}`} onAuthError={handleError} onDeleted={() => {
+              api.forgetSession(); setUser(null); setLink(null); setExpiresAt(null); setProfileDirty(false); setAuthError('ACCOUNT_DELETED');
+            }} />
           {notice && <div className="error-notice" role="alert">{errorText(notice)}
             <button type="button" onClick={() => setNotice(null)} aria-label={t('app.dismiss')}>×</button></div>}
         </div>}
-        {!loading && user && !onboardingRequired && <p className="coming-soon">{t('home.comingSoon')}</p>}
       </main>
       <footer><span>{t('app.footer')}</span><span>{t('app.edition')}</span></footer>
     </div>

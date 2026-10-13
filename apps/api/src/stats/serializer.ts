@@ -35,17 +35,5 @@ export function serializeOwnStats(user: StatsUser, availability: StatsResponse['
   });
 }
 
-// Explicit allow-list: never return library, exact activity, sync metadata or
-// guidance by spreading the owner-only response into a public response.
-export function serializePublicStats(stats: StatsResponse, privacy: { shareSteamActivity: boolean }) {
-  const steam = stats.steam;
-  return {
-    steam: steam ? { steamId64: steam.steamId64, personaName: steam.personaName,
-      avatarUrl: steam.avatarUrl, profileUrl: steam.profileUrl, bans: { ...steam.bans },
-      ...(privacy.shareSteamActivity ? { cs2: stats.steam!.cs2, games: stats.steam!.games.map((game) => ({ ...game })) } : {}),
-    } : null,
-    faceit: stats.faceit ? { playerId: stats.faceit.playerId, nickname: stats.faceit.nickname,
-      profileUrl: stats.faceit.profileUrl, level: stats.faceit.level, elo: stats.faceit.elo,
-      kd: stats.faceit.kd, winRate: stats.faceit.winRate, favoriteMaps: [...stats.faceit.favoriteMaps], verified: stats.faceit.verified } : null,
-  };
-}
+// Public responses use profile/serializer.ts's strict PublicPlayerCard. This
+// owner-only cache contains identifiers and the library and must never be reused.

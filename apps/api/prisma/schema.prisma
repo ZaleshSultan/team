@@ -208,6 +208,7 @@ model PlayerProfile {
   id          String   @id @default(uuid()) @db.Uuid
   userId      String   @map("user_id") @db.Uuid
   gameId      String   @map("game_id") @db.Uuid
+  nickname    String?  @db.VarChar(32)
   roles       String[] @default([])
   languages   String[] @default([])
   hasMic      Boolean  @default(false) @map("has_mic")

@@ -37,8 +37,10 @@ after five minutes, and offers a saved-status retry control.
 Steam profiles skip the library request. Unknown/private activity remains unknown,
 not a fabricated zero-hour CS2 record. Malformed or failed upstream responses
 preserve the old cache. The owner response includes their cache even when activity
-sharing is off; `serializePublicStats` explicitly omits `games` and `cs2` unless
-`shareSteamActivity` is true. No public feed endpoint is introduced in M3.
+sharing is off. M4 retires the prototype public-stats serializer: the strict
+[public player card](profile.md#public-privacy-matrix) always hides the library and
+account identifiers, and includes exact CS2 hours only with `shareSteamActivity`.
+No public feed endpoint is introduced in M3 or M4.
 
 Migration `202610120001_stats_sync` adds `stats_sync`, its user cascade, status
 check and `(next_refresh_at,user_id)` index. It records attempts, successes, due
