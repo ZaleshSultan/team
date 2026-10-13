@@ -15,7 +15,7 @@
   --accent-text: #17201b;
   --button-background: #c5f467;
   --button-text: #17201b;
-  --muted: #939d93;
+  --muted: #afb7ad;
   --border: #4c534d;
   --warning: #e8c99d;
   --error: #e8c0a7;
@@ -95,7 +95,7 @@ footer { display: flex; justify-content: space-between; border-top: 1px solid va
 .username-note { padding: 15px; border: 1px solid var(--border); background: var(--surface-raised); border-radius: 9px; }.username-note h3 { color: var(--warning); }.username-note p { color: var(--warning); font-size: 11px; line-height: 1.7; }.username-note .settings-path { color: var(--text); font-size: 10px; }
 .steam-explainer { display: flex; gap: 13px; padding: 18px 0; margin-bottom: 14px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
 .steam-explainer svg { color: var(--accent); flex-shrink: 0; width: 26px; height: 26px; margin-top: 3px; }.steam-explainer p { font-size: 11px; line-height: 1.8; color: var(--muted); margin: 0; }
-.link-progress { margin: 20px 0; }.link-progress h3 { color: var(--accent); line-height: 1.6; }.link-progress p { font-size: 11px; line-height: 1.8; color: var(--muted); }
+.link-progress { margin: 20px 0; }.link-progress .steam-connection-hint { padding: 12px; background: var(--surface-raised); border: 1px solid var(--border); border-radius: 8px; }.link-progress h3 { color: var(--accent); line-height: 1.6; }.link-progress p { font-size: 11px; line-height: 1.8; color: var(--muted); }
 .fallback-link { font-size: 10px; color: var(--muted); display: block; margin: 13px 0 5px; line-height: 1.6; text-underline-offset: 3px; }
 .link-terminal { color: var(--warning); font-size: 11px; line-height: 1.8; padding: 14px; border: 1px solid var(--border); background: var(--surface-raised); border-radius: 8px; margin: 18px 0; }
 .steam-linked { text-align: center; padding: 12px 0; }.verified-icon { color: var(--accent); height: 57px; width: 57px; margin: 0 auto 19px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--border); background: var(--surface-raised); font-size: 24px; }

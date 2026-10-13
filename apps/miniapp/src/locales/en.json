@@ -28,7 +28,7 @@
   },
   "identity": {
     "step": "01 / TELEGRAM",
-    "telegramVerified": "Verified",
+    "telegramVerified": "Signed in",
     "title": "You're in SQUAD",
     "description": "Your Telegram account is verified. One more step: connect Steam.",
     "telegram": "Username",
@@ -74,6 +74,7 @@
     "newLink": "Create a new link",
     "openExternal": "Open Steam in an external browser",
     "browserFallback": "If the browser didn't open — use this link",
+    "connectionHint": "If Steam does not open, try another network or turn off VPN/firewall. Then create a new link.",
     "returnInstructions": "Return here after confirmation. Your status updates automatically. The link is single-use and expires shortly.",
     "checkStatus": "Check status",
     "passwordNote": "Your password is entered only on Steam's website. SQUAD never receives it.",

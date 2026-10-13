@@ -6,6 +6,7 @@ import { getTelegramWebApp, openExternalLink, prepareTelegram } from './telegram
 import { isPendingSteamLink, pollSteamLink, type SteamLinkSnapshot } from './steam-polling.js';
 import { createOnboardingSubmission } from './onboarding.js';
 import { StatsCard } from './StatsCard.js';
+import { SteamLinkProgress } from './SteamLinkProgress.js';
 import { AccountDeletionSection, ProfileScreen } from './ProfileScreen.js';
 
 type LinkAttempt = SteamLinkSnapshot & { url: string };
@@ -298,19 +299,8 @@ export function App() {
             </div> : <>
               <div className="steam-explainer"><Crosshair /><p>{t('steam.externalDescription')}</p></div>
               {onboardingRequired && <p className="privacy-note">{t('steam.completeOnboarding')}</p>}
-              {pendingLink && link && <div className="link-progress" aria-live="polite">
-                <h3>{t(`steam.status.${link.status}`)}</h3><p>{t('steam.returnInstructions')}</p>
-                {link.status === 'PENDING' && <>
-                  <a className="primary-button full-width" href={link.url} target="_blank" rel="noopener noreferrer" onClick={continueToSteam}>
-                    {t('steam.openExternal')}
-                  </a>
-                  <a className="fallback-link" href={link.url} target="_blank" rel="noopener noreferrer">{t('steam.browserFallback')}</a>
-                </>}
-                <button className="text-button" type="button" onClick={() => setPollGeneration((generation) => generation + 1)}>{t('steam.checkStatus')}</button>
-                {link.status === 'STARTED' && <button className="secondary-button" type="button" disabled={Boolean(operation)} onClick={() => { void createSteamLink(); }}>
-                  {t('steam.newLink')}
-                </button>}
-              </div>}
+              {pendingLink && link && <SteamLinkProgress link={link} busy={Boolean(operation)} onContinue={continueToSteam}
+                onCheckStatus={() => setPollGeneration((generation) => generation + 1)} onNewLink={() => { void createSteamLink(); }} />}
               {link && !pendingLink && link.status !== 'COMPLETED' && <p className="link-terminal" role="alert">
                 {link.status === 'FAILED' && link.failureCode ? errorText(link.failureCode) : t(`steam.status.${link.status}`)}
               </p>}

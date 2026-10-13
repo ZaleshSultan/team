@@ -81,7 +81,7 @@ Public preview uses exactly this serializer, including when the profile is still
 
 Russian is the default; English has the same translation keys. The form provides selection limits, live text counters/errors, save feedback, publication checklist, preview and sharing explanation. Unsaved input enables both browser navigation protection and Telegram closing confirmation, with an explicit logout warning.
 
-ThemeParams and live `themeChanged` follow the [official Telegram Mini App API](https://core.telegram.org/bots/webapps#themeparams).
+ThemeParams and live `themeChanged` follow the [official Telegram Mini App API](https://core.telegram.org/bots/webapps#themeparams). UI polish repairs low-contrast foreground colors across page and panel surfaces to at least WCAG AA 4.5:1, including arbitrary valid Telegram hex palettes. Browser connection errors in the external Steam tab cannot be detected from the Mini App: a visible network/VPN/firewall hint and fresh attempt action are provided instead.
 
 Migration `202610130001_m4_profile_nickname` adds nullable `player_profiles.nickname VARCHAR(32)` without rewriting existing rows. Provider tests use no external keys or DB. Integration tests require a separate database ending `_test`, test migration shape, upsert, ownership, publish/unpublish, privacy and deletion cascades, and clean only their own test identities. Real-device Telegram behavior remains a separate acceptance check.
 
