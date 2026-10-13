@@ -92,7 +92,7 @@ describe.runIf(Boolean(databaseUrl))('M5 isolated PostgreSQL feed lifecycle', ()
     const cutoff = new Date(now.getTime() - DECLINED_REQUEST_COOLDOWN_DAYS * 86_400_000);
     await prisma.teammateRequest.createMany({ data: targets.map((target, index) => ({ gameId,
       fromUserId: index === 3 ? target.user.id : caller.user.id, toUserId: index === 3 ? caller.user.id : target.user.id,
-      status: index === 4 ? 'CANCELLED' : 'DECLINED',
+      status: index === 4 ? 'CANCELED' : 'DECLINED',
       resolvedAt: index === 2 ? new Date(cutoff.getTime() - 1) : index === 1 ? cutoff : now,
     })) });
     expect((await itemIds()).sort()).toEqual(targets.slice(2).map((target) => target.profile!.id).sort());

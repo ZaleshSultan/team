@@ -19,8 +19,13 @@ enum TeammateRequestStatus {
   PENDING
   ACCEPTED
   DECLINED
-  CANCELLED
+  CANCELED
   EXPIRED
+}
+
+enum RequestNotificationKind {
+  CREATED
+  ACCEPTED
 }
 
 enum ReportStatus {
@@ -58,6 +63,7 @@ model User {
   reportsMade      Report[]          @relation("Reporter")
   reportsReceived  Report[]          @relation("ReportedUser")
   reportsReviewed  Report[]          @relation("ReportReviewer")
+  notificationEvents RequestNotification[]
 
   @@index([isBanned])
   @@map("users")
@@ -279,19 +285,45 @@ model TeammateRequest {
   toUserId   String                @map("to_user_id") @db.Uuid
   gameId     String                @map("game_id") @db.Uuid
   status     TeammateRequestStatus @default(PENDING)
-  message    String?               @db.VarChar(300)
+  message    String?               @db.VarChar(200)
   createdAt  DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
   resolvedAt DateTime?             @map("resolved_at") @db.Timestamptz(3)
+  expiresAt  DateTime              @default(dbgenerated("(now() + '7 days'::interval)")) @map("expires_at") @db.Timestamptz(3)
   fromUser   User                  @relation("RequestSender", fields: [fromUserId], references: [id], onDelete: Cascade)
   toUser     User                  @relation("RequestRecipient", fields: [toUserId], references: [id], onDelete: Cascade)
   game       Game                  @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  notifications RequestNotification[]
 
   // Migration also adds a no-self CHECK and a partial unique pending-pair index.
   @@index([fromUserId, createdAt])
+  @@index([fromUserId, status, createdAt, id])
   @@index([toUserId, status, createdAt])
   @@index([fromUserId, toUserId, gameId, status])
   @@index([gameId])
+  @@index([status, expiresAt, id])
   @@map("teammate_requests")
+}
+
+// Transactional outbox: Redis jobs reference only this event id. Contacts are
+// resolved at delivery time and never stored in a notification payload.
+model RequestNotification {
+  id              String                  @id @default(uuid()) @db.Uuid
+  requestId       String                  @map("request_id") @db.Uuid
+  recipientUserId String                  @map("recipient_user_id") @db.Uuid
+  kind            RequestNotificationKind
+  createdAt       DateTime                @default(now()) @map("created_at") @db.Timestamptz(3)
+  enqueuedAt      DateTime?               @map("enqueued_at") @db.Timestamptz(3)
+  deliveredAt     DateTime?               @map("delivered_at") @db.Timestamptz(3)
+  claimToken      String?                 @map("claim_token") @db.Uuid
+  claimedUntil    DateTime?               @map("claimed_until") @db.Timestamptz(3)
+  request         TeammateRequest         @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  recipient       User                    @relation(fields: [recipientUserId], references: [id], onDelete: Cascade)
+
+  @@unique([requestId, kind])
+  @@index([recipientUserId])
+  @@index([enqueuedAt, deliveredAt, createdAt, id], map: "request_notifications_dispatch_idx")
+  @@index([claimedUntil])
+  @@map("request_notifications")
 }
 
 model Block {

@@ -65,13 +65,32 @@ const linkOrHandle = /@|(?:[a-z][a-z\d+.-]*:\/\/)|\b(?:https?:|www\s*\.)|(?:[\p{
 const ipv4Link = /(?:^|[^\p{L}\p{N}.])(?:25[0-5]|2[0-4]\d|[01]?\d?\d)(?:\.(?:25[0-5]|2[0-4]\d|[01]?\d?\d)){3}(?=$|[^\p{L}\p{N}.])/u;
 // Seven or more digits with ordinary phone separators, including a leading +.
 const phoneLike = /(?:\+?\p{Nd}[\s()._-]*){7,}/u;
+function containsIpv6(text: string): boolean {
+  // Validate address candidates rather than treating ordinary scores/times as
+  // contacts. Compressed, full and IPv4-mapped forms are supported in browsers.
+  const candidates = [...text.matchAll(/(?:^|[^\p{L}\p{N}:])((?:[a-f\d]{0,4}:){2,}[a-f\d:.]*)(?=$|[^\p{L}\p{N}:])/giu)];
+  return candidates.some((match) => {
+    const candidate = match[1]!;
+    let address = candidate.replace(/\.+$/, '');
+    if (address.includes('.')) {
+      const colon = address.lastIndexOf(':'); const tail = address.slice(colon + 1).split('.');
+      if (tail.length !== 4 || tail.some((part) => !/^\d{1,3}$/.test(part) || Number(part) > 255)) return false;
+      address = `${address.slice(0, colon + 1)}ffff:ffff`;
+    }
+    const halves = address.split('::');
+    if (halves.length > 2) return false;
+    const groups = halves.flatMap((half) => half ? half.split(':') : []);
+    if (groups.some((group) => !/^[a-f\d]{1,4}$/iu.test(group))) return false;
+    return halves.length === 2 ? groups.length < 8 : groups.length === 8;
+  });
+}
 export function profileTextError(field: 'nickname' | 'bio', value: string | null): ProfileValidationCode | null {
   if (value === null) return field === 'nickname' ? null : 'INVALID_TYPE';
   const text = normalizeProfileText(value);
   // Check compatibility forms without changing the player's stored display text.
   // Browsers treat ideographic/fullwidth dots as ordinary hostname separators.
   const contactText = text.normalize('NFKC').replace(/[\u3002\uFF0E\uFF61]/gu, '.');
-  if (linkOrHandle.test(contactText) || ipv4Link.test(contactText) || phoneLike.test(contactText)) return 'CONTACTS_NOT_ALLOWED';
+  if (linkOrHandle.test(contactText) || ipv4Link.test(contactText) || containsIpv6(contactText) || phoneLike.test(contactText)) return 'CONTACTS_NOT_ALLOWED';
   const length = Array.from(text).length;
   if (field === 'bio') return length > 500 ? 'TOO_LONG' : null;
   if (length === 0) return null;
