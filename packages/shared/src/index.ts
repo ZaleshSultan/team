@@ -10,6 +10,8 @@ export * from './requests.js';
 export * from './notifications.js';
 export * from './telegram-contact.js';
 export * from './notification-config.js';
+export * from './moderation.js';
+export * from './admin-config.js';
 
 export const languageSchema = z.enum(['ru', 'en']);
 export type Language = z.infer<typeof languageSchema>;

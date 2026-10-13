@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { isIP } from 'node:net';
-import { notificationSettingsSchema } from '@squad/shared';
+import { notificationSettingsSchema, moderationSettingsSchema, adminSettingsSchema } from '@squad/shared';
 
 const trustedProxyEnv = z.string().default('false').transform((value, ctx): false | string[] => {
   if (value === 'false') return false;
@@ -38,6 +38,8 @@ const envSchema = z.object({
   REQUEST_TTL_DAYS: z.coerce.number().int().min(1).max(30).default(7),
   REQUESTS_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(1).max(600).default(60),
   ...notificationSettingsSchema.shape,
+  ...moderationSettingsSchema.shape,
+  ...adminSettingsSchema.shape,
   FEED_REQUIRES_PUBLISHED_PROFILE: z.enum(['true', 'false']).default('true').transform((value) => value === 'true'),
   FEED_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(1).max(600).default(60),
   STATS_REFRESH_HOURS: z.coerce.number().int().min(1).max(24).default(6),
@@ -47,7 +49,6 @@ const envSchema = z.object({
   STATS_FACEIT_INTERVAL_MS: z.coerce.number().int().min(250).max(10_000).default(1000),
   STEAM_WEB_API_KEY: z.string().optional(),
   FACEIT_API_KEY: z.string().optional(),
-  ADMIN_TELEGRAM_IDS: z.string().default(''),
 }).superRefine((env, ctx) => {
   for (const key of ['MINIAPP_URL', 'PUBLIC_API_URL', 'MINIAPP_ORIGIN'] as const) {
     // Zod still runs refinements after a URL validation issue. Preserve that

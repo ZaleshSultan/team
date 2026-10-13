@@ -25,7 +25,11 @@ function request(authorization?: string, ip = '203.0.113.20', url = '/api/me') {
   return { headers: { ...(authorization ? { authorization } : {}) }, ip, routeOptions: { url } } as FastifyRequest;
 }
 function mockPrisma(found: ReturnType<typeof session> | null = session()) {
-  return { session: { findUnique: vi.fn().mockResolvedValue(found) }, user: { deleteMany: vi.fn().mockResolvedValue({ count: 1 }) }, $disconnect: vi.fn() };
+  const db = { session: { findUnique: vi.fn().mockResolvedValue(found) }, user: { deleteMany: vi.fn().mockResolvedValue({ count: 1 }) },
+    report: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) }, $queryRaw: vi.fn().mockResolvedValue([]),
+    $transaction: vi.fn(), $disconnect: vi.fn() };
+  db.$transaction.mockImplementation((callback) => callback(db));
+  return db;
 }
 
 describe('session-aware rate limit keys', () => {
@@ -107,6 +111,8 @@ describe('account deletion', () => {
       const response = await app.inject({ method: 'DELETE', url: '/api/me', headers: { authorization: `Bearer ${token}` }, payload: { confirmation: 'DELETE' } });
       expect(response.statusCode).toBe(204);
       expect(db.user.deleteMany).toHaveBeenCalledExactlyOnceWith({ where: { id: userId } });
+      expect(db.report.updateMany).toHaveBeenCalledWith({ where: { reportedUserId: userId, reporterUserId: { not: userId } },
+        data: { details: null, resolutionNote: 'ACCOUNT_DELETED', status: 'REVIEWED', resolvedAt: now, resolvedBy: null } });
       for (const oldToken of [token, secondToken]) {
         expect((await app.inject({ url: '/api/me', headers: { authorization: `Bearer ${oldToken}` } })).statusCode).toBe(401);
       }

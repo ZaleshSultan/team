@@ -23,6 +23,7 @@ export function publishRequirements(user: PublishUser, profile: PlayerProfile | 
   if (!user.steamAccount) missing.push({ code: 'STEAM_REQUIRED' });
   if (!profile) missing.push({ code: 'PROFILE_INCOMPLETE' });
   else {
+    if (profile.moderationHidden) missing.push({ code: 'MODERATION_HIDDEN' });
     const fields: ProfileField[] = (['roles', 'lookingFor', 'playTimes', 'languages'] as const).filter((field) => !profile[field].length);
     if (!profile.region.trim()) fields.push('region');
     if (fields.length) missing.push({ code: 'PROFILE_INCOMPLETE', fields });

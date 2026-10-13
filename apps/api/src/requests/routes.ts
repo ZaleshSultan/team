@@ -47,7 +47,8 @@ export async function registerRequestRoutes(app: FastifyInstance, deps: {
   for (const method of ['POST', 'DELETE'] as const) {
     app.route({ method, url: '/api/blocks/:profileId', ...options, handler: async (request) => {
       const user = await actor(request); emptyInputSchema.parse(request.body ?? {}); emptyInputSchema.parse(request.query);
-      const parsed = blockProfileParamsSchema.safeParse(request.params); if (!parsed.success) throw targetUnavailable();
+      const parsed = blockProfileParamsSchema.safeParse(request.params);
+      if (!parsed.success) throw method === 'POST' ? targetUnavailable() : new AppError(404, 'BLOCK_NOT_FOUND', 'The block was not found');
       return blockResponseSchema.parse(await deps.requests.block(user.id, parsed.data.profileId, method === 'POST'));
     } });
   }

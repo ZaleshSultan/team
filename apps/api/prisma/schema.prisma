@@ -31,7 +31,28 @@ enum RequestNotificationKind {
 enum ReportStatus {
   OPEN
   REVIEWED
+  ACTIONED
   DISMISSED
+}
+
+enum ReportReason {
+  SPAM
+  HARASSMENT
+  CHEATING
+  FAKE_PROFILE
+  CONTACT_SPAM
+  UNDERAGE
+  OTHER
+}
+
+enum AdminConfirmationAction {
+  BAN
+  UNBAN
+}
+
+enum ModerationNotificationKind {
+  ADMIN_REPORT
+  BAN_NOTICE
 }
 
 model User {
@@ -45,6 +66,7 @@ model User {
   rulesVersion        String?   @map("rules_version") @db.VarChar(50)
   isBanned            Boolean   @default(false) @map("is_banned")
   botBlocked          Boolean   @default(false) @map("bot_blocked")
+  moderationFlaggedAt DateTime? @map("moderation_flagged_at") @db.Timestamptz(3)
   createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
@@ -64,6 +86,9 @@ model User {
   reportsReceived  Report[]          @relation("ReportedUser")
   reportsReviewed  Report[]          @relation("ReportReviewer")
   notificationEvents RequestNotification[]
+  adminAuditLogs AdminAuditLog[]
+  adminConfirmations AdminActionConfirmation[]
+  moderationNotifications ModerationNotification[]
 
   @@index([isBanned])
   @@map("users")
@@ -203,6 +228,7 @@ model Game {
   createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
   profiles       PlayerProfile[]
   userGames      UserGame[]
+  reports        Report[]
   clusterMembers GameClusterMember[]
   requests       TeammateRequest[]
 
@@ -223,6 +249,8 @@ model PlayerProfile {
   lookingFor  String[] @default([]) @map("looking_for")
   bio         String   @default("") @db.VarChar(500)
   isPublished Boolean  @default(false) @map("is_published")
+  moderationHidden Boolean @default(false) @map("moderation_hidden")
+  moderationWasPublished Boolean @default(false) @map("moderation_was_published")
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -293,6 +321,7 @@ model TeammateRequest {
   toUser     User                  @relation("RequestRecipient", fields: [toUserId], references: [id], onDelete: Cascade)
   game       Game                  @relation(fields: [gameId], references: [id], onDelete: Cascade)
   notifications RequestNotification[]
+  reports Report[]
 
   // Migration also adds a no-self CHECK and a partial unique pending-pair index.
   @@index([fromUserId, createdAt])
@@ -337,27 +366,99 @@ model Block {
   // Migration also adds a no-self CHECK.
   @@unique([blockerUserId, blockedUserId])
   @@index([blockedUserId])
+  @@index([blockerUserId, createdAt, id])
   @@map("blocks")
 }
 
 model Report {
   id             String       @id @default(uuid()) @db.Uuid
   reporterUserId String       @map("reporter_user_id") @db.Uuid
-  reportedUserId String       @map("reported_user_id") @db.Uuid
-  reason         String       @db.VarChar(100)
-  comment        String?      @db.VarChar(1000)
+  reportedUserId String?      @map("reported_user_id") @db.Uuid
+  gameId         String?      @map("game_id") @db.Uuid
+  requestId      String?      @map("request_id") @db.Uuid
+  reason         ReportReason
+  details        String?      @db.VarChar(500)
   status         ReportStatus @default(OPEN)
   createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
-  reviewedAt     DateTime?    @map("reviewed_at") @db.Timestamptz(3)
-  reviewerUserId String?      @map("reviewer_user_id") @db.Uuid
+  resolvedAt     DateTime?    @map("resolved_at") @db.Timestamptz(3)
+  resolvedBy     String?      @map("resolved_by") @db.Uuid
+  resolutionNote String?      @map("resolution_note") @db.VarChar(500)
   reporter       User         @relation("Reporter", fields: [reporterUserId], references: [id], onDelete: Cascade)
-  reportedUser   User         @relation("ReportedUser", fields: [reportedUserId], references: [id], onDelete: Cascade)
-  reviewer       User?        @relation("ReportReviewer", fields: [reviewerUserId], references: [id], onDelete: SetNull)
+  reportedUser   User?        @relation("ReportedUser", fields: [reportedUserId], references: [id], onDelete: SetNull)
+  reviewer       User?        @relation("ReportReviewer", fields: [resolvedBy], references: [id], onDelete: SetNull)
+  game           Game?        @relation(fields: [gameId], references: [id], onDelete: SetNull)
+  request        TeammateRequest? @relation(fields: [requestId], references: [id], onDelete: SetNull)
+  adminAuditLogs AdminAuditLog[]
+  moderationNotifications ModerationNotification[]
 
   // Migration also adds a no-self CHECK.
   @@index([status, createdAt])
   @@index([reportedUserId, createdAt])
   @@index([reporterUserId])
-  @@index([reviewerUserId])
+  @@index([resolvedBy])
+  @@index([reporterUserId, reportedUserId, status, createdAt])
+  @@index([status, resolvedAt, id])
+  @@index([gameId])
+  @@index([requestId])
   @@map("reports")
+}
+
+// Application code only creates audit rows. Nullable references preserve history
+// when a user deletes their account or report retention removes its source row.
+model AdminAuditLog {
+  id String @id @default(uuid()) @db.Uuid
+  adminTelegramId BigInt @map("admin_telegram_id")
+  action String @db.VarChar(80)
+  targetUserId String? @map("target_user_id") @db.Uuid
+  reportId String? @map("report_id") @db.Uuid
+  reason String? @db.VarChar(500)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  targetUser User? @relation(fields: [targetUserId], references: [id], onDelete: SetNull)
+  report Report? @relation(fields: [reportId], references: [id], onDelete: SetNull)
+
+  @@index([adminTelegramId, createdAt])
+  @@index([targetUserId])
+  @@index([reportId])
+  @@map("admin_audit_log")
+}
+
+model AdminActionConfirmation {
+  id String @id @default(uuid()) @db.Uuid
+  tokenHash String @unique @map("token_hash") @db.VarChar(64)
+  adminTelegramId BigInt @map("admin_telegram_id")
+  targetUserId String @map("target_user_id") @db.Uuid
+  action AdminConfirmationAction
+  reason String? @db.VarChar(500)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(3)
+  consumedAt DateTime? @map("consumed_at") @db.Timestamptz(3)
+  targetUser User @relation(fields: [targetUserId], references: [id], onDelete: Cascade)
+  notification ModerationNotification?
+
+  @@index([expiresAt])
+  @@index([targetUserId])
+  @@map("admin_action_confirmations")
+}
+
+model ModerationNotification {
+  id String @id @default(uuid()) @db.Uuid
+  kind ModerationNotificationKind
+  recipientTelegramId BigInt? @map("recipient_telegram_id")
+  recipientUserId String? @map("recipient_user_id") @db.Uuid
+  reportId String? @map("report_id") @db.Uuid
+  confirmationId String? @unique @map("confirmation_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  enqueuedAt DateTime? @map("enqueued_at") @db.Timestamptz(3)
+  deliveredAt DateTime? @map("delivered_at") @db.Timestamptz(3)
+  claimToken String? @map("claim_token") @db.Uuid
+  claimedUntil DateTime? @map("claimed_until") @db.Timestamptz(3)
+  recipient User? @relation(fields: [recipientUserId], references: [id], onDelete: Cascade)
+  report Report? @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  confirmation AdminActionConfirmation? @relation(fields: [confirmationId], references: [id], onDelete: SetNull)
+
+  @@unique([reportId, recipientTelegramId])
+  @@index([enqueuedAt, deliveredAt, createdAt, id], map: "moderation_notifications_dispatch_idx")
+  @@index([claimedUntil])
+  @@index([recipientUserId])
+  @@map("moderation_notifications")
 }

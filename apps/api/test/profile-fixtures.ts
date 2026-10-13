@@ -4,7 +4,7 @@ export const profileFixture: PlayerProfile = {
   id: '10000000-0000-4000-8000-000000000001', userId: '20000000-0000-4000-8000-000000000001',
   gameId: '30000000-0000-4000-8000-000000000001', nickname: 'Игрок', roles: ['entry'],
   lookingFor: ['duo'], playTimes: ['evening'], languages: ['ru', 'kk'], region: 'KZ',
-  hasMic: true, bio: 'Ищу команду для спокойной игры.', isPublished: false,
+  hasMic: true, bio: 'Ищу команду для спокойной игры.', isPublished: false, moderationHidden: false, moderationWasPublished: false,
   createdAt: new Date('2026-10-13T10:00:00Z'), updatedAt: new Date('2026-10-13T10:00:00Z'),
 };
 export const steamFixture: SteamAccount = {

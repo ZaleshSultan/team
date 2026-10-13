@@ -47,13 +47,13 @@ export class RequestService {
   private sender(user: Participant | null) {
     const current = this.actor(user);
     if (!current.steamAccount) throw new AppError(409, 'STEAM_REQUIRED', 'Link Steam before sending requests');
-    if (!current.playerProfiles[0]?.isPublished || !this.card(current)) throw new AppError(409, 'PUBLISHED_PROFILE_REQUIRED', 'Publish a valid profile first');
+    if (!current.playerProfiles[0]?.isPublished || current.playerProfiles[0]?.moderationHidden || !this.card(current)) throw new AppError(409, 'PUBLISHED_PROFILE_REQUIRED', 'Publish a valid profile first');
     if (current.botBlocked) throw contactUnavailable();
     return current;
   }
   private eligible(user: Participant | null) {
     return Boolean(user && !user.isBanned && !user.botBlocked && this.consent(user)
-      && user.steamAccount && user.playerProfiles[0]?.isPublished && this.card(user));
+      && user.steamAccount && user.playerProfiles[0]?.isPublished && !user.playerProfiles[0]?.moderationHidden && this.card(user));
   }
   private card(user: Participant) {
     const profile = user.playerProfiles[0];
@@ -202,12 +202,27 @@ export class RequestService {
   async block(callerId: string, profileId: string, blocked: boolean) {
     return this.prisma.$transaction(async (tx) => {
       const profile = await tx.playerProfile.findUnique({ where: { id: profileId }, select: { userId: true, game: { select: { slug: true } } } });
-      if (!profile || profile.game.slug !== 'cs2') throw targetUnavailable();
-      if (profile.userId === callerId) throw new AppError(409, 'BLOCK_SELF', 'You cannot block yourself');
+      const missingBlock = () => new AppError(404, 'BLOCK_NOT_FOUND', 'The block was not found');
+      if (!profile || profile.game.slug !== 'cs2') throw blocked ? targetUnavailable() : missingBlock();
+      if (profile.userId === callerId) throw blocked ? new AppError(409, 'BLOCK_SELF', 'You cannot block yourself') : missingBlock();
       await lockUsers(tx, callerId, profile.userId);
-      this.sender(await this.participant(tx, callerId));
+      this.actor(await this.participant(tx, callerId));
       if (blocked) {
-        if (!this.eligible(await this.participant(tx, profile.userId))) throw targetUnavailable();
+        const existing = await tx.block.findUnique({ where: { blockerUserId_blockedUserId: { blockerUserId: callerId, blockedUserId: profile.userId } }, select: { id: true } });
+        const history = await tx.teammateRequest.findFirst({ where: pairWhere(callerId, profile.userId), select: { id: true } });
+        const reported = await tx.report.findFirst({ where: { reporterUserId: callerId, reportedUserId: profile.userId }, select: { id: true } });
+        if (!existing && !history && !reported) {
+          // A first block from a feed card needs the same caller eligibility as
+          // the feed. History/reports preserve blocking after auto-hiding.
+          const caller = this.actor(await this.participant(tx, callerId));
+          if (this.config.FEED_REQUIRES_PUBLISHED_PROFILE) this.sender(caller);
+          else {
+            if (!caller.steamAccount) throw new AppError(409, 'STEAM_REQUIRED', 'Link Steam first');
+            if (caller.botBlocked) throw contactUnavailable();
+          }
+          if (!this.eligible(await this.participant(tx, profile.userId))
+            || await tx.block.findFirst({ where: blockedWhere(callerId, profile.userId), select: { id: true } })) throw targetUnavailable();
+        }
         await tx.block.upsert({ where: { blockerUserId_blockedUserId: { blockerUserId: callerId, blockedUserId: profile.userId } },
           create: { blockerUserId: callerId, blockedUserId: profile.userId }, update: {} });
         await tx.teammateRequest.updateMany({ where: { ...pairWhere(callerId, profile.userId), status: 'PENDING' }, data: { status: 'CANCELED', resolvedAt: this.now() } });

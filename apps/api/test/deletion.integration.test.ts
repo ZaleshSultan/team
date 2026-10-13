@@ -41,10 +41,11 @@ describe.runIf(Boolean(databaseUrl))('account deletion PostgreSQL cascades', () 
       ] });
       await prisma.block.createMany({ data: [{ blockerUserId: ownerId, blockedUserId: peerId }, { blockerUserId: peerId, blockedUserId: ownerId }] });
       await prisma.report.createMany({ data: [
-        { reporterUserId: ownerId, reportedUserId: peerId, reason: 'fixture' },
-        { reporterUserId: peerId, reportedUserId: ownerId, reason: 'fixture' },
+        { reporterUserId: ownerId, reportedUserId: peerId, reason: 'OTHER' },
+        { reporterUserId: peerId, reportedUserId: ownerId, reason: 'OTHER', details: 'private evidence @deletion_fixture' },
       ] });
-      const reviewed = await prisma.report.create({ data: { reporterUserId: peerId, reportedUserId: thirdId, reviewerUserId: ownerId, reason: 'fixture', status: 'REVIEWED' } });
+      const reviewed = await prisma.report.create({ data: { reporterUserId: peerId, reportedUserId: thirdId, resolvedBy: ownerId, reason: 'OTHER', status: 'REVIEWED' } });
+      const audit = await prisma.adminAuditLog.create({ data: { adminTelegramId: telegramBase, action: 'USER_READ', targetUserId: ownerId, reportId: reviewed.id } });
 
       const response = await app.inject({ method: 'DELETE', url: '/api/me', headers: { authorization: `Bearer ${token}` }, payload: { confirmation: 'DELETE' } });
       expect(response.statusCode).toBe(204);
@@ -63,7 +64,10 @@ describe.runIf(Boolean(databaseUrl))('account deletion PostgreSQL cascades', () 
       expect(ownedCounts).toEqual(Array(12).fill(0));
       expect(await prisma.user.count({ where: { id: { in: [peerId, thirdId] } } })).toBe(2);
       expect(await prisma.game.count({ where: { id: gameId } })).toBe(1);
-      expect((await prisma.report.findUniqueOrThrow({ where: { id: reviewed.id } })).reviewerUserId).toBeNull();
+      expect((await prisma.report.findUniqueOrThrow({ where: { id: reviewed.id } })).resolvedBy).toBeNull();
+      const anonymized = await prisma.report.findFirstOrThrow({ where: { reporterUserId: peerId, reportedUserId: null } });
+      expect(anonymized).toMatchObject({ details: null, status: 'REVIEWED', resolvedBy: null, resolvedAt: now, resolutionNote: 'ACCOUNT_DELETED' });
+      expect((await prisma.adminAuditLog.findUniqueOrThrow({ where: { id: audit.id } })).targetUserId).toBeNull();
     } finally {
       await prisma.user.deleteMany({ where: { id: { in: userIds } } });
       await prisma.game.deleteMany({ where: { id: gameId } });

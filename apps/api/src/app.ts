@@ -19,10 +19,12 @@ import { ProfileValidationError } from './games/cs2.js';
 import { PublishGateError } from './profile/errors.js';
 import { registerFeedRoutes } from './feed/routes.js';
 import { FeedAccessError } from './feed/access.js';
-import { TelegramContacts } from '@squad/shared';
+import { TelegramContacts, communityInfoSchema, emptyInputSchema } from '@squad/shared';
 import { RequestService } from './requests/service.js';
 import { registerRequestRoutes } from './requests/routes.js';
 import { DailyRequestLimitError } from './requests/errors.js';
+import { ReportService, DailyReportLimitError } from './moderation/service.js';
+import { registerModerationRoutes } from './moderation/routes.js';
 
 export interface AppDependencies {
   prisma?: PrismaClient;
@@ -31,6 +33,7 @@ export interface AppDependencies {
   now?: () => Date;
   stats?: StatsService;
   requests?: RequestService;
+  moderation?: ReportService;
 }
 
 export async function buildApp(config: Config, dependencies: AppDependencies = {}) {
@@ -64,8 +67,15 @@ export async function buildApp(config: Config, dependencies: AppDependencies = {
     reply.header('Cache-Control', 'no-store');
     return payload;
   });
+  // Only these routes have a query contract. OpenID validates its signed
+  // protocol fields itself; all other registered routes reject unknown input.
+  const queryRoutes = new Set(['/api/feed/cs2', '/api/requests/incoming', '/api/requests/outgoing',
+    '/api/blocks', '/api/auth/steam/start', '/api/auth/steam/callback']);
+  app.addHook('preValidation', async (request) => {
+    if (request.routeOptions.url && !queryRoutes.has(request.routeOptions.url)) emptyInputSchema.parse(request.query);
+  });
   app.setErrorHandler((error, request, reply) => {
-    if (error instanceof DailyRequestLimitError) {
+    if (error instanceof DailyRequestLimitError || error instanceof DailyReportLimitError) {
       reply.header('Retry-After', String(Math.max(1, Math.ceil((Date.parse(error.resetAt) - (dependencies.now?.().getTime() ?? Date.now())) / 1000))));
       return reply.code(error.statusCode).send({ error: { code: error.code, message: error.message, resetAt: error.resetAt, requestId: request.id } });
     }
@@ -90,6 +100,8 @@ export async function buildApp(config: Config, dependencies: AppDependencies = {
   });
   app.setNotFoundHandler((request, reply) => reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Route not found', requestId: request.id } }));
   app.get('/health', { config: { rateLimit: false } }, async () => ({ status: 'ok' }));
+  app.get('/api/community', async () => communityInfoSchema.parse({ botUsername: config.BOT_USERNAME,
+    minimumAge: config.AGE_MINIMUM, rulesVersion: config.RULES_VERSION, supportContact: config.SUPPORT_CONTACT }));
   app.get('/ready', { config: { rateLimit: false } }, async () => {
     try {
       await prisma.$queryRaw`SELECT 1`;
@@ -110,5 +122,7 @@ export async function buildApp(config: Config, dependencies: AppDependencies = {
   const requests = dependencies.requests ?? new RequestService(prisma, config,
     new TelegramContacts(config.BOT_TOKEN, { timeoutMs: config.TELEGRAM_CONTACT_TIMEOUT_MS, fetch: dependencies.fetch }), undefined, dependencies.now);
   await registerRequestRoutes(app, { config, prisma, requests, now: dependencies.now ?? (() => new Date()) });
+  const moderation = dependencies.moderation ?? new ReportService(prisma, config, undefined, dependencies.now);
+  await registerModerationRoutes(app, { config, prisma, moderation, now: dependencies.now ?? (() => new Date()) });
   return app;
 }

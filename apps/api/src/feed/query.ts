@@ -9,6 +9,8 @@ export interface FeedQueryInput {
   gameId: string; callerId: string; provider: GameProvider; filters: FeedFilters;
   position: FeedPosition | null; limit: number; now: Date;
   minimumAge: number; rulesVersion: string;
+  /** Internal visibility check only; never accepted as a public filter. */
+  targetProfileId?: string;
 }
 export interface FeedRow extends FeedPosition {
   nickname: string | null; roles: string[]; lookingFor: string[]; playTimes: string[];
@@ -24,7 +26,7 @@ export function buildFeedQuery(input: FeedQueryInput): Prisma.Sql {
   const { callerId, filters, position } = input;
   const declinedSince = new Date(input.now.getTime() - DECLINED_REQUEST_COOLDOWN_DAYS * 86_400_000);
   const conditions: Prisma.Sql[] = [
-    Prisma.sql`p.game_id = ${input.gameId}::uuid`, Prisma.sql`p.is_published = true`,
+    Prisma.sql`p.game_id = ${input.gameId}::uuid`, Prisma.sql`p.is_published = true`, Prisma.sql`p.moderation_hidden = false`,
     Prisma.sql`u.id <> ${callerId}::uuid`, Prisma.sql`u.is_banned = false`,
     Prisma.sql`u.bot_blocked = false`, Prisma.sql`u.username IS NOT NULL AND length(trim(u.username)) > 0`,
     Prisma.sql`u.age_confirmed_at IS NOT NULL AND u.age_minimum_confirmed = ${input.minimumAge}`,
@@ -35,6 +37,7 @@ export function buildFeedQuery(input: FeedQueryInput): Prisma.Sql {
     Prisma.sql`NOT EXISTS (SELECT 1 FROM teammate_requests r WHERE r.from_user_id = u.id AND r.to_user_id = ${callerId}::uuid AND (r.status = 'ACCEPTED' OR (r.status = 'PENDING' AND r.expires_at > ${input.now})))`,
     Prisma.sql`NOT EXISTS (SELECT 1 FROM teammate_requests r WHERE r.from_user_id = ${callerId}::uuid AND r.to_user_id = u.id AND r.status = 'DECLINED' AND r.resolved_at >= ${declinedSince})`,
   ];
+  if (input.targetProfileId) conditions.push(Prisma.sql`p.id = ${input.targetProfileId}::uuid`);
   if (position) conditions.push(Prisma.sql`(p.created_at, p.id) < (${position.createdAt}, ${position.id}::uuid)`);
   if (filters.roles.length) conditions.push(Prisma.sql`p.roles && ARRAY[${Prisma.join(filters.roles)}]::text[]`);
   if (filters.languages.length) conditions.push(Prisma.sql`p.languages && ARRAY[${Prisma.join(filters.languages)}]::text[]`);

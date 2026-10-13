@@ -4,6 +4,7 @@ import type { RedisOptions } from 'ioredis';
 import { NOTIFICATION_BATCH_SIZE, NOTIFICATION_QUEUE_NAME, notificationJobId,
   REQUEST_MAINTENANCE_INTERVAL_MS, REQUEST_MAINTENANCE_QUEUE_NAME } from '@squad/shared';
 import type { Config } from '../config.js';
+import { dispatchModerationNotifications, retainModerationData } from '../moderation/maintenance.js';
 
 const OUTBOX_RECHECK_MS = 15 * 60_000;
 const EXPIRY_BATCH_SIZE = 500;
@@ -75,7 +76,10 @@ export function createRequestsRuntime(config: Config, prisma: PrismaClient, opti
   maintenance.on('error', () => options.logError?.('Request maintenance queue connection failed'));
   let worker: Worker | undefined;
   let currentDispatch: Promise<number> | undefined;
-  const dispatch = () => currentDispatch ??= dispatchRequestNotifications(prisma, notifications, options.now?.() ?? new Date())
+  const dispatch = () => currentDispatch ??= Promise.all([
+    dispatchRequestNotifications(prisma, notifications, options.now?.() ?? new Date()),
+    dispatchModerationNotifications(prisma, notifications, options.now?.() ?? new Date()),
+  ]).then((counts) => counts.reduce((sum, count) => sum + count, 0))
     .finally(() => { currentDispatch = undefined; });
   return { dispatch,
     async start() {
@@ -84,6 +88,7 @@ export function createRequestsRuntime(config: Config, prisma: PrismaClient, opti
         if (job.name !== 'request-maintenance') return;
         try {
           await expirePendingRequests(prisma, options.now?.() ?? new Date());
+          await retainModerationData(prisma, config, options.now?.() ?? new Date());
           await dispatch();
         } catch { throw new Error('REQUEST_MAINTENANCE_FAILED'); }
       }, { connection, concurrency: 1 });

@@ -6,6 +6,7 @@ import { createStatsRuntime } from './stats/queue.js';
 import { createRequestsRuntime } from './requests/queue.js';
 import { RequestService } from './requests/service.js';
 import { TelegramContacts } from '@squad/shared';
+import { ReportService } from './moderation/service.js';
 
 let shutdown: (() => Promise<void>) | undefined;
 try {
@@ -16,7 +17,8 @@ try {
   const requestRuntime = createRequestsRuntime(config, prisma, { logError: (message) => console.error(message) });
   const requests = new RequestService(prisma, config, new TelegramContacts(config.BOT_TOKEN,
     { timeoutMs: config.TELEGRAM_CONTACT_TIMEOUT_MS }), () => requestRuntime.dispatch());
-  const app = await buildApp(config, { prisma, redis, stats: stats.service, requests });
+  const moderation = new ReportService(prisma, config, () => requestRuntime.dispatch());
+  const app = await buildApp(config, { prisma, redis, stats: stats.service, requests, moderation });
   app.addHook('onClose', () => stats.close());
   app.addHook('onClose', () => requestRuntime.close());
   shutdown = async () => { await app.close(); };

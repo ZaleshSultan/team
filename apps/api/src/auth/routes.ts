@@ -77,9 +77,15 @@ export async function registerAuthRoutes(app: FastifyInstance, deps: AuthDepende
   app.delete('/api/me', { config: { rateLimit: { max: 3, timeWindow: '1 minute' } } }, async (request, reply) => {
     const user = await requireSession(request);
     deleteAccountInputSchema.parse(request.body);
-    // The foreign keys atomically cascade sessions and all user-owned rows;
-    // reviewer references on other users' reports are SET NULL as defined.
-    await prisma.user.deleteMany({ where: { id: user.id } });
+    await prisma.$transaction(async (tx) => {
+      // Serialize deletion with requests, bans, linking and stats persistence.
+      await tx.$queryRaw`SELECT id FROM users WHERE id = ${user.id}::uuid FOR UPDATE`;
+      // Reports BY this user cascade. Reports ABOUT them retain only the reason
+      // and moderation state, without private details or identifying notes.
+      await tx.report.updateMany({ where: { reportedUserId: user.id, reporterUserId: { not: user.id } },
+        data: { details: null, resolutionNote: 'ACCOUNT_DELETED', status: 'REVIEWED', resolvedAt: now(), resolvedBy: null } });
+      await tx.user.deleteMany({ where: { id: user.id } });
+    }, transactionOptions);
     return reply.code(204).send();
   });
   app.post('/api/auth/logout', async (request, reply) => {
@@ -93,11 +99,18 @@ export async function registerAuthRoutes(app: FastifyInstance, deps: AuthDepende
     const body = onboardingInputSchema.parse(request.body);
     if (body.minimumAge !== config.AGE_MINIMUM || body.rulesVersion !== config.RULES_VERSION) throw new AppError(400, 'CONSENT_OUTDATED', 'Review the current age requirement and rules');
     if (!current.username) throw new AppError(409, 'USERNAME_REQUIRED', 'Set a Telegram username first');
-    const user = await prisma.user.update({ where: { id: current.id }, data: {
+    const user = await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM users WHERE id = ${current.id}::uuid FOR UPDATE`;
+      const active = await tx.user.findUnique({ where: { id: current.id } });
+      if (!active) throw new AppError(401, 'SESSION_EXPIRED', 'The session has expired');
+      if (active.isBanned) throw new AppError(403, 'USER_BANNED', 'This account is banned');
+      if (!active.username) throw new AppError(409, 'USERNAME_REQUIRED', 'Set a Telegram username first');
+      return tx.user.update({ where: { id: current.id }, data: {
       ageConfirmedAt: now(), ageMinimumConfirmed: config.AGE_MINIMUM,
       rulesAcceptedAt: now(), rulesVersion: config.RULES_VERSION, language: body.language,
       privacySettings: { upsert: { create: { shareSteamActivity: body.shareSteamActivity }, update: { shareSteamActivity: body.shareSteamActivity } } },
-    }, include: includes });
+      }, include: includes });
+    }, transactionOptions);
     reply.header('Cache-Control', 'no-store');
     return meResponseSchema.parse({ user: toAuthUser(user, config) });
   });
@@ -114,7 +127,13 @@ export async function registerAuthRoutes(app: FastifyInstance, deps: AuthDepende
     } catch {
       throw new AppError(502, 'TELEGRAM_UNAVAILABLE', 'Start the bot and try checking your username again');
     }
-    const user = await prisma.user.update({ where: { id: current.id }, data: { username }, include: includes });
+    const user = await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM users WHERE id = ${current.id}::uuid FOR UPDATE`;
+      const active = await tx.user.findUnique({ where: { id: current.id } });
+      if (!active) throw new AppError(401, 'SESSION_EXPIRED', 'The session has expired');
+      if (active.isBanned) throw new AppError(403, 'USER_BANNED', 'This account is banned');
+      return tx.user.update({ where: { id: current.id }, data: { username }, include: includes });
+    }, transactionOptions);
     reply.header('Cache-Control', 'no-store');
     return meResponseSchema.parse({ user: toAuthUser(user, config) });
   });

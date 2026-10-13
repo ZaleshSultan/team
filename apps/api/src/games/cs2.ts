@@ -1,16 +1,10 @@
 import { playerProfileInputSchema, normalizeProfileText, profileTextError, profileFieldSchema,
-  type PlayerProfileInput, type ProfileOptions, type ProfileValidationIssue,
+  CS2_PROFILE_OPTIONS, type PlayerProfileInput, type ProfileValidationIssue,
   type VerificationBadges } from '@squad/shared';
 import { isSteamId64 } from '../stats/providers/http.js';
 import type { GameProvider } from './provider.js';
 
-export const CS2_PROFILE_OPTIONS: ProfileOptions = {
-  roles: ['entry', 'awp', 'support', 'lurk', 'igl'],
-  lookingFor: ['duo', 'five_stack', 'team'],
-  playTimes: ['morning', 'day', 'evening', 'night'],
-  languages: ['ru', 'kk', 'en', 'de', 'fr', 'es', 'it', 'pt', 'tr', 'uk', 'pl', 'uz', 'ky', 'tg', 'az', 'hy', 'ka', 'be', 'zh', 'ko', 'ja', 'ar'],
-  regions: ['KZ', 'RU', 'CIS', 'EU', 'OTHER'],
-};
+export { CS2_PROFILE_OPTIONS } from '@squad/shared';
 
 /** Contains fixed codes and known field names only; never retains untrusted input. */
 export class ProfileValidationError extends Error {

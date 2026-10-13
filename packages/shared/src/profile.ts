@@ -30,7 +30,7 @@ export type Cs2ProfileInput = PlayerProfileInput;
 export const verificationBadgesSchema = z.object({ steamVerified: z.boolean(), faceitVerified: z.boolean() }).strict();
 export type VerificationBadges = z.infer<typeof verificationBadgesSchema>;
 export const publishRequirementSchema = z.object({
-  code: z.enum(['ONBOARDING_INCOMPLETE', 'STEAM_REQUIRED', 'PROFILE_INCOMPLETE', 'PROFILE_INVALID', 'USER_BANNED']),
+  code: z.enum(['ONBOARDING_INCOMPLETE', 'STEAM_REQUIRED', 'PROFILE_INCOMPLETE', 'PROFILE_INVALID', 'USER_BANNED', 'MODERATION_HIDDEN']),
   fields: z.array(profileFieldSchema).optional(),
 }).strict();
 export type PublishRequirement = z.infer<typeof publishRequirementSchema>;
