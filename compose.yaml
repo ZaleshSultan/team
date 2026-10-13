@@ -37,6 +37,7 @@ services:
     restart: unless-stopped
   postgres:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-squad}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
@@ -52,6 +53,7 @@ services:
       retries: 10
   redis:
     image: redis:7-alpine
+    restart: unless-stopped
     command: ['redis-server', '--appendonly', 'yes']
     ports:
       - '127.0.0.1:${REDIS_PORT:-6379}:6379'
